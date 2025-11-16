@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unit 5 Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <style>
+        /* 动画效果 */
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(-30px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        /* 基础样式 */
+        .race-track {
+            height: 80px;
+            background: linear-gradient(90deg, #f0f0f0 50%, #e8e8e8 50%);
+            background-size: 20px 100%;
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+        }
+        
+        .finish-line {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 8px;
+            right: 0;
+            background: linear-gradient(0deg, #FFD700 0%, #FFA500 100%);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+            z-index: 10;
+        }
+        
+        .rabbit, .turtle {
+            position: absolute;
+            width: 55px;
+            height: 55px;
+            transition: left 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            z-index: 5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 24px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .rabbit { 
+            bottom: 12px; 
+            left: 0; 
+            background: linear-gradient(135deg, #FF6B6B 0%, #FF4757 100%);
+            color: white;
+        }
+        
+        .turtle { 
+            top: 12px; 
+            left: 0; 
+            background: linear-gradient(135deg, #4ECDC4 0%, #2A9D8F 100%);
+            color: white;
+        }
+        
+        .cover {
+            background: linear-gradient(135deg, #165DFF 0%, #36CFC9 100%);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            overflow: hidden;
+        }
+        
+        .cover::before {
+            content: '';
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            top: 10%;
+            left: 10%;
+            animation: float 8s infinite;
+        }
+        
+        .cover::after {
+            content: '';
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.05);
+            bottom: 10%;
+            right: 10%;
+            animation: float 10s infinite;
+        }
+        
+        .cover-content {
+            text-align: center;
+            padding: 2rem;
+            z-index: 2;
+            animation: slideIn 1s ease-out;
+        }
+        
+        .cover h1 {
+            animation: bounce 2s infinite;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .audio-btn {
+            transition: all 0.2s ease;
+        }
+        
+        .audio-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .audio-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .music-controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            cursor: pointer;
+            z-index: 1000;
+            border: 3px solid #165DFF;
+            transition: all 0.3s ease;
+        }
+        
+        .music-controls:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+        }
+        
+        .music-icon {
+            color: #165DFF;
+            font-size: 24px;
+        }
+        
+        .audio-status {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            z-index: 999;
+            font-size: 14px;
+            display: none;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        }
+        
+        .btn {
+            transition: all 0.2s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .progress-indicator {
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #165DFF 0%, #36CFC9 100%);
+            transition: width 0.5s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- 音频元素 -->
+    <audio id="bgMusic" loop>
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="wordAudio"></audio>
+
+    <!-- 音频状态提示 -->
+    <div class="audio-status" id="audioStatus"></div>
+
+    <!-- 背景音乐控制按钮 -->
+    <div class="music-controls" onclick="toggleBackgroundMusic()">
+        <i id="musicIcon" class="fa fa-music music-icon"></i>
+    </div>
+
+    <!-- 封面页 -->
+    <div id="coverPage" class="cover">
+        <div class="cover-content">
+            <h1 class="text-5xl md:text-7xl font-bold text-white mb-6 text-center">
+                Unit 5 Game
+            </h1>
+            <p class="text-xl text-white/90 mb-10 text-center max-w-2xl mx-auto">
+                通过趣味竞赛学习气象相关词汇，挑战自己，击败对手！
+            </p>
+            <button id="startBtn" class="bg-white text-blue-600 px-8 py-4 rounded-xl font-bold text-lg shadow-lg hover:bg-gray-100 transition-all transform hover:scale-105">
+                开始游戏 <i class="fa fa-arrow-right ml-2"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- 游戏主区域 -->
+    <div id="gameArea" class="container mx-auto px-4 py-8 max-w-3xl hidden">
+        <h1 class="text-2xl font-bold text-blue-600 mb-6 flex items-center">
+            <i class="fa fa-book mr-2"></i> Unit 5 词汇学习竞赛
+        </h1>
+        
+        <!-- 进度条区域 -->
+        <div class="card p-5 rounded-lg mb-6">
+            <div class="flex justify-between mb-3">
+                <div class="flex items-center">
+                    <div class="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center text-white mr-2">
+                        <i class="fa fa-bolt"></i>
+                    </div>
+                    <div>你的进度: <span id="rabbitProgress" class="font-bold">0%</span></div>
+                </div>
+                <div class="flex items-center">
+                    <div class="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white mr-2">
+                        <i class="fa fa-shield"></i>
+                    </div>
+                    <div>对手进度: <span id="turtleProgress" class="font-bold">0%</span></div>
+                </div>
+            </div>
+            <div class="race-track">
+                <div class="finish-line"></div>
+                <div class="rabbit">
+                    <i class="fa fa-bolt"></i>
+                </div>
+                <div class="turtle">
+                    <i class="fa fa-shield"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 词汇区域 -->
+        <div class="card p-6 rounded-lg mb-6">
+            <div class="flex flex-wrap justify-between items-center mb-4">
+                <h2 id="word" class="text-xl font-bold text-blue-600 mb-2 sm:mb-0"></h2>
+                <button onclick="pronounceWord()" class="audio-btn p-3 bg-blue-100 rounded-full text-blue-600">
+                    <i class="fa fa-volume-up text-lg"></i> 发音
+                </button>
+            </div>
+            <p id="phonetic" class="text-gray-500 italic mb-3 border-l-4 border-blue-200 pl-3"></p>
+            <p id="definition" class="text-gray-700 mb-6 p-3 bg-gray-50 rounded-lg"></p>
+            
+            <div class="mb-5">
+                <label class="block mb-2 font-medium text-gray-700">请拼写单词：</label>
+                <div class="flex">
+                    <input type="text" id="userInput" class="flex-grow p-3 border border-gray-300 rounded-l focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                           placeholder="输入单词...">
+                    <button onclick="checkAnswer()" class="bg-blue-600 text-white p-3 rounded-r btn">提交</button>
+                </div>
+                <div id="feedback" class="mt-3 min-h-[24px]"></div>
+            </div>
+            
+            <div id="hint" class="hidden p-3 bg-yellow-50 border-l-4 border-yellow-400 mb-4 rounded-r">
+                <p id="hintText" class="text-yellow-700"></p>
+            </div>
+            
+            <div class="flex flex-wrap justify-between gap-2">
+                <button onclick="showHint()" class="bg-yellow-500 text-white px-4 py-2 rounded btn">
+                    <i class="fa fa-lightbulb-o mr-1"></i> 提示
+                </button>
+                <button id="nextBtn" onclick="nextWord()" 
+                        class="bg-gray-300 text-gray-500 px-4 py-2 rounded cursor-not-allowed">
+                    下一题 <i class="fa fa-chevron-right ml-1"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- 底部状态栏 -->
+        <div class="grid grid-cols-3 gap-4 text-center text-sm">
+            <div class="bg-white p-3 rounded-lg shadow-sm">
+                <p class="text-gray-500">进度</p>
+                <p id="progress" class="font-bold text-blue-600">1/30</p>
+                <div class="progress-indicator mt-2">
+                    <div id="progressBar" class="progress-fill" style="width: 3%"></div>
+                </div>
+            </div>
+            <div class="bg-white p-3 rounded-lg shadow-sm">
+                <p class="text-gray-500">正确</p>
+                <p id="score" class="font-bold text-green-600">0</p>
+            </div>
+            <div class="bg-white p-3 rounded-lg shadow-sm">
+                <p class="text-gray-500">剩余时间</p>
+                <p id="timer" class="font-bold text-orange-600">05:00</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 完整词汇数据
+        const vocabulary = [
+            { word: "bar", phonetic: "/bɑː(r)/", definition: "n.（河口或海湾入口处的）沙洲，浅滩" },
+            { word: "barometer", phonetic: "/bəˈrɒmɪtə/", definition: "n. 气压表（也指气压）" },
+            { word: "forecast", phonetic: "/ˈfɔːkɑːst/", definition: "n. 气象预报" },
+            { word: "gale warning", phonetic: "/ɡeɪl ˈwɔːnɪŋ/", definition: "大风警报" },
+            { word: "general situation", phonetic: "/ˈdʒenrəl ˌsɪtʃuˈeɪʃn/", definition: "气象形势/大势" },
+            { word: "high water", phonetic: "/haɪ ˈwɔːtə/", definition: "高潮" },
+            { word: "hydrology", phonetic: "/haɪˈdrɒlədʒi/", definition: "n. 水文学，水文情况" },
+            { word: "isolated", phonetic: "/ˈaɪsəleɪtɪd/", definition: "a. 局部的" },
+            { word: "low water", phonetic: "/ləʊ ˈwɔːtə/", definition: "低潮" },
+            { word: "meteorology", phonetic: "/ˌmiːtiəˈrɒlədʒi/", definition: "n. 气象" },
+            { word: "monsoon", phonetic: "/ˌmɒnˈsuːn/", definition: "n. 信风" },
+            { word: "scattered", phonetic: "/ˈskætəd/", definition: "a. 零星的" },
+            { word: "seas/sea state", phonetic: "/siːz/ /siː steɪt/", definition: "浪级，海况" },
+            { word: "shower", phonetic: "/ˈʃaʊə/", definition: "n. 阵雨" },
+            { word: "southwesterly", phonetic: "/saʊθˈwestəli/", definition: "a.（风）向西南的，来自西南(的)" },
+            { word: "swell", phonetic: "/swel/", definition: "n. 涌，涌浪" },
+            { word: "synoptic", phonetic: "/sɪˈnɒptɪk/", definition: "a. 天气的，概要的" },
+            { word: "synoptic situation", phonetic: "/sɪˈnɒptɪk ˌsɪtʃuˈeɪʃn/", definition: "气象形势/大势" },
+            { word: "take shelter", phonetic: "/teɪk ˈʃeltə/", definition: "避风，寻求庇护所" },
+            { word: "thunderstorm", phonetic: "/ˈθʌndəstɔːm/", definition: "n. 雷雨" },
+            { word: "tide", phonetic: "/taɪd/", definition: "n. 潮汐" },
+            { word: "tropical", phonetic: "/ˈtrɒpɪkl/", definition: "a. 热带的" },
+            { word: "tropical storm", phonetic: "/ˈtrɒpɪkl stɔːm/", definition: "热带风暴" },
+            { word: "valid", phonetic: "/ˈvælɪd/", definition: "a. 有效的" },
+            { word: "veer", phonetic: "/vɪə/", definition: "vt. 使转向, 放出（锚）；vi. 转向，（风向）顺（时针）转" },
+            { word: "visibility", phonetic: "/ˌvɪzəˈbɪləti/", definition: "n. 能见度" },
+            { word: "weather message", phonetic: "/ˈweðə ˈmesɪdʒ/", definition: "气象报告" },
+            { word: "wind direction", phonetic: "/wɪnd daɪˈrekʃn/", definition: "风向" },
+            { word: "wind force", phonetic: "/wɪnd fɔːs/", definition: "风力" },
+            { word: "WX bulletin", phonetic: "/ˌdʌbljuːˈeks ˈbʊlətɪn/", definition: "气象公报" }
+        ];
+
+        // 游戏状态
+        let currentIndex = 0;
+        let shuffledVocab = [];
+        let score = 0;
+        let timeLeft = 300; // 5分钟
+        let rabbitPos = 0;
+        let turtlePos = 0;
+        let timer;
+        let turtleMoveInterval;
+        let musicPlaying = false;
+        
+        // DOM元素
+        const bgMusic = document.getElementById('bgMusic');
+        const wordAudio = document.getElementById('wordAudio');
+        const coverPage = document.getElementById('coverPage');
+        const gameArea = document.getElementById('gameArea');
+        const startBtn = document.getElementById('startBtn');
+        const musicIcon = document.getElementById('musicIcon');
+        const audioStatus = document.getElementById('audioStatus');
+        const userInput = document.getElementById('userInput');
+        const feedback = document.getElementById('feedback');
+        const nextBtn = document.getElementById('nextBtn');
+        const wordElement = document.getElementById('word');
+        const phoneticElement = document.getElementById('phonetic');
+        const definitionElement = document.getElementById('definition');
+        const hintElement = document.getElementById('hint');
+        const hintTextElement = document.getElementById('hintText');
+        const progressElement = document.getElementById('progress');
+        const progressBar = document.getElementById('progressBar');
+        const scoreElement = document.getElementById('score');
+        const timerElement = document.getElementById('timer');
+        const rabbitElement = document.querySelector('.rabbit');
+        const turtleElement = document.querySelector('.turtle');
+        const rabbitProgressElement = document.getElementById('rabbitProgress');
+        const turtleProgressElement = document.getElementById('turtleProgress');
+
+        // 显示音频状态提示
+        function showAudioStatus(message, duration = 2000) {
+            audioStatus.textContent = message;
+            audioStatus.style.display = 'block';
+            
+            clearTimeout(window.audioStatusTimeout);
+            window.audioStatusTimeout = setTimeout(() => {
+                audioStatus.style.display = 'none';
+            }, duration);
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 开始游戏按钮事件
+            startBtn.addEventListener('click', function() {
+                coverPage.style.display = 'none';
+                gameArea.classList.remove('hidden');
+                initGame();
+                
+                // 尝试播放背景音乐
+                setTimeout(() => {
+                    if (!musicPlaying) {
+                        toggleBackgroundMusic();
+                    }
+                }, 1000);
+            });
+
+            // 预先请求音频权限
+            document.body.addEventListener('click', function enableAudio() {
+                // 播放一个静音的音频来获取权限
+                const tempAudio = new Audio();
+                tempAudio.volume = 0;
+                tempAudio.play().catch(e => console.log('音频权限请求:', e));
+                document.body.removeEventListener('click', enableAudio);
+            });
+        });
+
+        // 背景音乐控制
+        function playBackgroundMusic() {
+            bgMusic.volume = 0.3;
+            bgMusic.play()
+                .then(() => {
+                    musicPlaying = true;
+                    musicIcon.className = "fa fa-volume-up music-icon";
+                    showAudioStatus("背景音乐已开启");
+                })
+                .catch(error => {
+                    console.log('音乐播放失败:', error);
+                    musicIcon.className = "fa fa-volume-off music-icon";
+                    showAudioStatus("请允许网站播放声音", 3000);
+                });
+        }
+
+        function pauseBackgroundMusic() {
+            bgMusic.pause();
+            musicPlaying = false;
+            musicIcon.className = "fa fa-volume-off music-icon";
+            showAudioStatus("背景音乐已关闭");
+        }
+
+        function toggleBackgroundMusic() {
+            if (musicPlaying) {
+                pauseBackgroundMusic();
+            } else {
+                playBackgroundMusic();
+            }
+        }
+
+        // 初始化游戏
+        function initGame() {
+            currentIndex = 0;
+            // 打乱词汇顺序，但保留所有词汇
+            shuffledVocab = [...vocabulary].sort(() => Math.random() - 0.5);
+            score = 0;
+            timeLeft = 300;
+            rabbitPos = 0;
+            turtlePos = 0;
+            
+            // 更新UI
+            scoreElement.textContent = score;
+            updateTimer();
+            loadWord(currentIndex);
+            updateRacePositions();
+            updateProgressDisplay();
+            
+            // 启动计时器
+            clearInterval(timer);
+            timer = setInterval(updateTime, 1000);
+            
+            // 启动乌龟移动
+            clearInterval(turtleMoveInterval);
+            turtleMoveInterval = setInterval(moveTurtle, 2000);
+        }
+
+        // 更新进度显示
+        function updateProgressDisplay() {
+            const progressPercent = ((currentIndex + 1) / shuffledVocab.length) * 100;
+            progressElement.textContent = `${currentIndex + 1}/${shuffledVocab.length}`;
+            progressBar.style.width = `${progressPercent}%`;
+        }
+
+        // 加载单词
+        function loadWord(index) {
+            const item = shuffledVocab[index];
+            wordElement.textContent = ""; // 隐藏单词
+            phoneticElement.textContent = item.phonetic;
+            definitionElement.textContent = item.definition;
+            userInput.value = "";
+            feedback.textContent = "";
+            hintElement.classList.add('hidden');
+            
+            // 禁用下一题按钮
+            nextBtn.disabled = true;
+            nextBtn.className = "bg-gray-300 text-gray-500 px-4 py-2 rounded cursor-not-allowed";
+            
+            userInput.focus();
+        }
+
+        // 检查答案
+        function checkAnswer() {
+            const userAnswer = userInput.value.trim().toLowerCase();
+            const correctAnswer = shuffledVocab[currentIndex].word.toLowerCase();
+            
+            if (userAnswer === correctAnswer) {
+                feedback.textContent = "正确！做得好！";
+                feedback.style.color = "green";
+                feedback.style.fontWeight = "bold";
+                score++;
+                scoreElement.textContent = score;
+                
+                // 显示正确单词并添加动画
+                wordElement.textContent = shuffledVocab[currentIndex].word;
+                wordElement.style.animation = "bounce 0.5s";
+                setTimeout(() => {
+                    wordElement.style.animation = "";
+                }, 500);
+                
+                // 移动兔子 - 根据单词长度调整移动距离
+                const moveDistance = 3 + Math.min(Math.floor(shuffledVocab[currentIndex].word.length / 2), 4);
+                rabbitPos += moveDistance;
+                if (rabbitPos > 100) rabbitPos = 100;
+                updateRacePositions();
+                
+                // 启用下一题按钮
+                nextBtn.disabled = false;
+                nextBtn.className = "bg-green-500 text-white px-4 py-2 rounded btn hover:bg-green-600";
+                
+                // 检查是否到达终点
+                checkWinner();
+            } else {
+                feedback.textContent = "不正确，请再试一次。";
+                feedback.style.color = "red";
+                // 添加轻微震动效果
+                userInput.style.animation = "shake 0.3s";
+                setTimeout(() => {
+                    userInput.style.animation = "";
+                }, 300);
+            }
+        }
+
+        // 下一题
+        function nextWord() {
+            currentIndex++;
+            
+            if (currentIndex < shuffledVocab.length) {
+                loadWord(currentIndex);
+                updateProgressDisplay();
+            } else {
+                endGame();
+            }
+        }
+
+        // 显示提示
+        function showHint() {
+            const word = shuffledVocab[currentIndex].word;
+            // 更智能的提示 - 显示单词的前两个字母和长度
+            const hintLetters = word.length > 2 ? word.substring(0, 2) + "*".repeat(word.length - 2) : word;
+            hintTextElement.textContent = `提示: 单词长度为 ${word.length} 个字母 → ${hintLetters}`;
+            hintElement.classList.remove('hidden');
+        }
+
+        // 移动乌龟
+        function moveTurtle() {
+            // 随机移动距离，增加不确定性
+            const moveDistance = 0.5 + Math.random() * 1;
+            turtlePos += moveDistance;
+            if (turtlePos > 100) turtlePos = 100;
+            updateRacePositions();
+            checkWinner();
+        }
+
+        // 更新赛跑位置
+        function updateRacePositions() {
+            rabbitElement.style.left = `${rabbitPos}%`;
+            turtleElement.style.left = `${turtlePos}%`;
+            rabbitProgressElement.textContent = `${Math.round(rabbitPos)}%`;
+            turtleProgressElement.textContent = `${Math.round(turtlePos)}%`;
+            
+            // 当接近终点时添加脉动效果
+            if (rabbitPos > 80) {
+                rabbitElement.style.animation = "pulse 1s infinite";
+            } else {
+                rabbitElement.style.animation = "";
+            }
+            
+            if (turtlePos > 80) {
+                turtleElement.style.animation = "pulse 1s infinite";
+            } else {
+                turtleElement.style.animation = "";
+            }
+        }
+
+        // 检查获胜者
+        function checkWinner() {
+            if (rabbitPos >= 100) {
+                clearInterval(timer);
+                clearInterval(turtleMoveInterval);
+                setTimeout(() => {
+                    alert(`🎉 恭喜你赢了！\n得分: ${score}/${currentIndex + 1}\n用时: ${5 - Math.floor(timeLeft / 60)}分${300 - timeLeft % 60}秒`);
+                    initGame();
+                }, 500);
+            } else if (turtlePos >= 100) {
+                clearInterval(timer);
+                clearInterval(turtleMoveInterval);
+                setTimeout(() => {
+                    alert(`😢 很遗憾，对手赢了！\n你的得分: ${score}/${currentIndex + 1}`);
+                    initGame();
+                }, 500);
+            }
+        }
+
+        // 更新时间
+        function updateTime() {
+            timeLeft--;
+            updateTimer();
+            
+            // 时间不多时添加警告效果
+            if (timeLeft < 60) {
+                timerElement.style.color = "red";
+                timerElement.style.animation = "pulse 1s infinite";
+            } else {
+                timerElement.style.color = "";
+                timerElement.style.animation = "";
+            }
+            
+            if (timeLeft <= 0) {
+                endGame();
+            }
+        }
+
+        // 更新计时器显示
+        function updateTimer() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        // 结束游戏
+        function endGame() {
+            clearInterval(timer);
+            clearInterval(turtleMoveInterval);
+            alert(`⏰ 时间到！\n你的得分: ${score}/${shuffledVocab.length}`);
+            initGame();
+        }
+
+        // 单词发音功能 - 双重机制确保兼容性
+        function pronounceWord() {
+            const word = shuffledVocab[currentIndex].word;
+            const words = word.split(' ');
+            showAudioStatus(`正在播放: ${word}`);
+            
+            // 保存当前背景音乐音量
+            const originalVolume = bgMusic.volume;
+            
+            // 降低背景音乐音量
+            bgMusic.volume = 0.1;
+            
+            // 方法1: 使用Web Speech API
+            if ('speechSynthesis' in window) {
+                // 停止任何正在进行的语音
+                window.speechSynthesis.cancel();
+                
+                // 创建语音合成实例
+                const utterance = new SpeechSynthesisUtterance(word);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.9;
+                utterance.pitch = 1.1;
+                
+                // 播放完成后恢复背景音乐音量
+                utterance.onend = () => {
+                    setTimeout(() => {
+                        bgMusic.volume = originalVolume;
+                    }, 300);
+                };
+                
+                window.speechSynthesis.speak(utterance);
+                return;
+            }
+            
+            // 方法2: 使用有道词典API
+            if (words.length > 1) {
+                // 处理短语，依次播放每个单词
+                let delay = 0;
+                words.forEach((w, index) => {
+                    setTimeout(() => {
+                        wordAudio.src = `https://dict.youdao.com/dictvoice?type=2&audio=${encodeURIComponent(w)}`;
+                        wordAudio.play().catch(e => console.log('发音播放失败:', e));
+                        
+                        // 最后一个单词播放后恢复背景音乐
+                        if (index === words.length - 1) {
+                            setTimeout(() => {
+                                bgMusic.volume = originalVolume;
+                            }, 800);
+                        }
+                    }, delay);
+                    delay += 800; // 单词之间的间隔
+                });
+            } else {
+                // 单个单词
+                wordAudio.src = `https://dict.youdao.com/dictvoice?type=2&audio=${encodeURIComponent(word)}`;
+                wordAudio.play()
+                    .then(() => {
+                        // 播放完成后恢复背景音乐音量
+                        setTimeout(() => {
+                            bgMusic.volume = originalVolume;
+                        }, 800);
+                    })
+                    .catch(e => {
+                        console.log('发音播放失败:', e);
+                        showAudioStatus("发音播放失败", 3000);
+                        bgMusic.volume = originalVolume;
+                    });
+            }
+        }
+
+        // 键盘事件
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                if (nextBtn.disabled) {
+                    checkAnswer();
+                } else {
+                    nextBtn.click();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+    

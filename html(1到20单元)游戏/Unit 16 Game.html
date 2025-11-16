@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>军乐队表演单元游戏</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  
+  <!-- Tailwind 配置 -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#0A3157', // 深蓝色作为主色调
+            secondary: '#D32F2F', // 红色作为辅助色
+            accent: '#FFC107', // 金色作为强调色
+            neutral: '#1C1C1C',
+            light: '#F5F7FA',
+          },
+          fontFamily: {
+            serif: ['Garamond', 'Georgia', 'serif'],
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+        },
+      }
+    }
+  </script>
+  
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .content-auto {
+        content-visibility: auto;
+      }
+      .card-flip {
+        transform-style: preserve-3d;
+        transition: transform 0.6s;
+      }
+      .card-flip-active {
+        transform: rotateY(180deg);
+      }
+      .card-front, .card-back {
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+      }
+      .card-back {
+        transform: rotateY(180deg);
+      }
+      .text-shadow {
+        text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      }
+      .animate-float {
+        animation: float 3s ease-in-out infinite;
+      }
+      .animate-pulse-slow {
+        animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+      .bg-pattern {
+        background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%230A3157' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
+      }
+      @keyframes float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+        100% { transform: translateY(0px); }
+      }
+      .glass-effect {
+        background: rgba(255, 255, 255, 0.25);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+      }
+      .music-icon {
+        position: relative;
+        width: 30px;
+        height: 60px;
+        margin: 0 auto;
+      }
+    }
+  </style>
+</head>
+
+<body class="bg-light bg-pattern min-h-screen font-sans text-neutral">
+  <!-- 顶部导航 -->
+  <header class="sticky top-0 z-50 glass-effect shadow-md">
+    <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center space-x-3">
+        <div class="music-icon">
+          <i class="fa fa-music text-secondary text-2xl"></i>
+        </div>
+        <h1 class="text-xl md:text-2xl font-bold text-primary font-serif">军乐队表演单元游戏</h1>
+      </div>
+      <div class="flex items-center space-x-4">
+        <span id="progress-indicator" class="hidden md:inline-flex items-center text-sm">
+          <i class="fa fa-book text-accent mr-1"></i>
+          <span>进度: <span id="progress-percentage">0%</span></span>
+        </span>
+        <button id="sound-toggle" class="p-2 rounded-full hover:bg-gray-100 transition-colors">
+          <i class="fa fa-volume-up text-neutral"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container mx-auto px-4 py-8">
+    <!-- 欢迎界面 -->
+    <section id="welcome-screen" class="min-h-[70vh] flex flex-col items-center justify-center text-center">
+      <div class="mb-10 animate-float">
+        <i class="fa fa-music text-6xl text-primary/80"></i>
+      </div>
+      <h2 class="text-[clamp(1.8rem,5vw,3rem)] font-bold mb-4 text-shadow font-serif text-primary">军乐队表演单元游戏</h2>
+      <p class="text-gray-600 max-w-2xl mb-8 text-lg">通过交互式学习和趣味游戏，掌握各类军乐队表演常用词汇，提升专业表达能力</p>
+      <div class="flex flex-col sm:flex-row gap-4 w-full max-w-md">
+        <button id="start-learning" class="flex-1 bg-primary hover:bg-primary/90 text-white font-semibold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1">
+          <i class="fa fa-graduation-cap mr-2"></i>开始学习
+        </button>
+        <button id="start-game" class="flex-1 bg-secondary hover:bg-secondary/90 text-white font-semibold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1">
+          <i class="fa fa-gamepad mr-2"></i>趣味游戏
+        </button>
+      </div>
+      
+      <!-- 装饰元素 -->
+      <div class="absolute -bottom-1 left-0 w-full h-32 bg-gradient-to-t from-primary/5 to-transparent"></div>
+    </section>
+
+    <!-- 学习模块 -->
+    <section id="learning-module" class="hidden">
+      <div class="flex justify-between items-center mb-6">
+        <button id="back-from-learning" class="flex items-center text-gray-600 hover:text-primary transition-colors">
+          <i class="fa fa-arrow-left mr-2"></i>返回
+        </button>
+        <div class="text-sm text-gray-500">
+          <span id="current-word-index">1</span>/<span id="total-words">0</span>
+        </div>
+      </div>
+
+      <!-- 单词卡片 -->
+      <div class="relative w-full max-w-2xl mx-auto aspect-[4/3] mb-8">
+        <div id="word-card" class="card-flip w-full h-full absolute">
+          <!-- 卡片正面 - 单词和音标 -->
+          <div class="card-front absolute w-full h-full bg-white rounded-2xl shadow-xl p-8 flex flex-col justify-center items-center text-center border-2 border-primary/20">
+            <div class="absolute top-4 right-4 opacity-20">
+              <i class="fa fa-music text-3xl text-primary"></i>
+            </div>
+            <h3 id="word-spelling" class="text-3xl md:text-4xl font-bold text-primary mb-4 font-serif"></h3>
+            <div id="word-phonetic" class="text-gray-600 text-lg italic"></div>
+            <p class="mt-8 text-gray-500 text-sm">点击卡片查看详情</p>
+            <i class="fa fa-refresh text-gray-300 absolute bottom-4 animate-pulse-slow"></i>
+          </div>
+          
+          <!-- 卡片背面 - 释义和功能 -->
+          <div class="card-back absolute w-full h-full bg-white rounded-2xl shadow-xl p-8 flex flex-col border-2 border-primary/20">
+            <div class="absolute top-4 right-4 opacity-20">
+              <i class="fa fa-music text-3xl text-primary"></i>
+            </div>
+            <h3 id="word-spelling-back" class="text-2xl font-bold text-primary mb-2 font-serif"></h3>
+            <div id="word-part" class="text-accent font-medium mb-4"></div>
+            <div id="word-definition" class="flex-grow text-gray-700 mb-6"></div>
+            <div class="flex justify-between items-center">
+              <button id="mark-mastered" class="text-secondary hover:text-secondary/80 flex items-center transition-colors">
+                <i class="fa fa-check-circle mr-1"></i> 已掌握
+              </button>
+              <button id="play-pronunciation" class="text-primary hover:text-primary/80 transition-colors p-2 rounded-full hover:bg-primary/10">
+                <i class="fa fa-volume-up"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 导航按钮 -->
+      <div class="flex justify-between max-w-2xl mx-auto">
+        <button id="prev-word" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <i class="fa fa-arrow-left mr-2"></i>上一个
+        </button>
+        <button id="next-word" class="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          下一个<i class="fa fa-arrow-right ml-2"></i>
+        </button>
+      </div>
+
+      <!-- 已掌握单词列表 -->
+      <div class="mt-12">
+        <h4 class="text-lg font-semibold mb-4 flex items-center">
+          <i class="fa fa-check-square-o text-secondary mr-2"></i>已掌握单词
+        </h4>
+        <div id="mastered-words" class="flex flex-wrap gap-2">
+          <!-- 动态填充已掌握的单词 -->
+          <p class="text-gray-500 italic">尚未掌握任何单词</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 游戏模块 -->
+    <section id="game-module" class="hidden">
+      <div class="flex justify-between items-center mb-6">
+        <button id="back-from-game" class="flex items-center text-gray-600 hover:text-primary transition-colors">
+          <i class="fa fa-arrow-left mr-2"></i>返回
+        </button>
+        <div id="game-score" class="bg-accent/10 text-accent font-semibold py-1 px-3 rounded-full text-sm">
+          得分: <span id="current-score">0</span>
+        </div>
+      </div>
+
+      <!-- 游戏选择 -->
+      <div id="game-selection" class="min-h-[60vh] flex flex-col items-center justify-center">
+        <h2 class="text-2xl font-bold mb-8 text-center font-serif text-primary">选择游戏模式</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
+          <!-- 单词配对游戏 -->
+          <div class="game-card bg-white rounded-xl shadow-lg p-6 text-center hover:shadow-xl transition-all transform hover:-translate-y-1 cursor-pointer border-2 border-transparent hover:border-primary group">
+            <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-primary/20 transition-colors">
+              <i class="fa fa-exchange text-2xl text-primary"></i>
+            </div>
+            <h3 class="font-bold text-lg mb-2 font-serif">军乐词汇配对</h3>
+            <p class="text-gray-600 text-sm">将军乐队词汇与对应的释义进行配对</p>
+            <button data-game="matching" class="mt-4 text-primary font-medium hover:underline">开始游戏</button>
+          </div>
+
+          <!-- 拼写测验 -->
+          <div class="game-card bg-white rounded-xl shadow-lg p-6 text-center hover:shadow-xl transition-all transform hover:-translate-y-1 cursor-pointer border-2 border-transparent hover:border-secondary group">
+            <div class="w-16 h-16 bg-secondary/10 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-secondary/20 transition-colors">
+              <i class="fa fa-pencil text-2xl text-secondary"></i>
+            </div>
+            <h3 class="font-bold text-lg mb-2 font-serif">军乐词汇拼写</h3>
+            <p class="text-gray-600 text-sm">根据发音和释义拼写出正确的军乐队词汇</p>
+            <button data-game="spelling" class="mt-4 text-secondary font-medium hover:underline">开始游戏</button>
+          </div>
+
+          <!-- 词义匹配 -->
+          <div class="game-card bg-white rounded-xl shadow-lg p-6 text-center hover:shadow-xl transition-all transform hover:-translate-y-1 cursor-pointer border-2 border-transparent hover:border-accent group">
+            <div class="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-accent/20 transition-colors">
+              <i class="fa fa-question-circle text-2xl text-accent"></i>
+            </div>
+            <h3 class="font-bold text-lg mb-2 font-serif">军乐词汇释义</h3>
+            <p class="text-gray-600 text-sm">从选项中选择军乐队词汇的正确释义</p>
+            <button data-game="definition" class="mt-4 text-accent font-medium hover:underline">开始游戏</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 配对游戏 -->
+      <div id="matching-game" class="hidden">
+        <h3 class="text-xl font-bold mb-6 text-center font-serif text-primary">军乐词汇配对游戏</h3>
+        <p class="text-gray-600 text-center mb-8">找出与军乐队词汇匹配的释义，限时60秒</p>
+        
+        <div id="timer" class="text-center mb-6 text-lg font-semibold text-primary">
+          剩余时间: <span id="time-left">60</span>秒
+        </div>
+        
+        <div id="matching-board" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <!-- 动态生成卡片 -->
+        </div>
+        
+        <div class="text-center">
+          <button id="restart-matching" class="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-6 rounded-lg transition-colors">
+            <i class="fa fa-refresh mr-2"></i>重新开始
+          </button>
+        </div>
+      </div>
+
+      <!-- 拼写游戏 -->
+      <div id="spelling-game" class="hidden">
+        <h3 class="text-xl font-bold mb-6 text-center font-serif text-primary">军乐词汇拼写测验</h3>
+        <p class="text-gray-600 text-center mb-4">根据发音和释义，拼写出正确的军乐队词汇</p>
+        
+        <div class="max-w-md mx-auto bg-white rounded-xl shadow-lg p-6 mb-6 border border-primary/10">
+          <div class="absolute -top-3 -right-3 opacity-10">
+            <i class="fa fa-music text-5xl text-primary"></i>
+          </div>
+          <div id="spelling-hint" class="mb-4 text-gray-700"></div>
+          <div class="flex items-center mb-4">
+            <button id="spelling-pronounce" class="text-primary hover:text-primary/80 transition-colors p-2 rounded-full hover:bg-primary/10">
+              <i class="fa fa-volume-up"></i> 听发音
+            </button>
+          </div>
+          <input type="text" id="spelling-input" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" placeholder="请输入单词...">
+          <div id="spelling-feedback" class="mt-3 text-sm hidden"></div>
+        </div>
+        
+        <div class="text-center">
+          <button id="check-spelling" class="bg-secondary hover:bg-secondary/90 text-white font-medium py-2 px-6 rounded-lg transition-colors mr-2">
+            检查答案
+          </button>
+          <button id="next-spelling" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-6 rounded-lg transition-colors hidden">
+            下一个
+          </button>
+          <button id="restart-spelling" class="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-6 rounded-lg transition-colors mt-4">
+            <i class="fa fa-refresh mr-2"></i>重新开始
+          </button>
+        </div>
+      </div>
+
+      <!-- 词义匹配游戏 -->
+      <div id="definition-game" class="hidden">
+        <h3 class="text-xl font-bold mb-6 text-center font-serif text-primary">军乐词汇释义匹配</h3>
+        <p class="text-gray-600 text-center mb-4">从选项中选择军乐队词汇的正确释义</p>
+        
+        <div class="max-w-md mx-auto bg-white rounded-xl shadow-lg p-6 mb-6 border border-primary/10">
+          <div class="absolute -top-3 -right-3 opacity-10">
+            <i class="fa fa-music text-5xl text-primary"></i>
+          </div>
+          <div id="definition-word" class="text-xl font-bold text-primary mb-4 text-center font-serif"></div>
+          <div id="definition-options" class="space-y-3">
+            <!-- 动态生成选项 -->
+          </div>
+        </div>
+        
+        <div class="text-center">
+          <button id="next-definition" class="bg-secondary hover:bg-secondary/90 text-white font-medium py-2 px-6 rounded-lg transition-colors hidden">
+            下一个
+          </button>
+          <button id="restart-definition" class="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-6 rounded-lg transition-colors mt-4">
+            <i class="fa fa-refresh mr-2"></i>重新开始
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 游戏结果弹窗 -->
+    <div id="game-result-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+      <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 text-center transform transition-all border-2 border-primary/20">
+        <div class="absolute top-4 right-4 opacity-20">
+          <i class="fa fa-music text-3xl text-primary"></i>
+        </div>
+        <div id="result-icon" class="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center">
+          <i class="fa fa-trophy text-2xl"></i>
+        </div>
+        <h3 id="result-title" class="text-2xl font-bold mb-2 font-serif text-primary"></h3>
+        <p id="result-message" class="text-gray-600 mb-6"></p>
+        <div class="flex justify-center gap-4">
+          <button id="play-again" class="bg-primary hover:bg-primary/90 text-white font-semibold py-2 px-6 rounded-lg transition-colors">
+            再玩一次
+          </button>
+          <button id="back-to-games" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 px-6 rounded-lg transition-colors">
+            返回游戏选择
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="bg-white mt-12 py-6 border-t border-primary/10">
+    <div class="container mx-auto px-4 text-center text-gray-500 text-sm">
+      <p>军乐队表演单元游戏 &copy; 2023 - 提升您的军乐队专业表达能力</p>
+    </div>
+  </footer>
+
+  <script>
+    // 军乐队相关词汇数据
+    const vocabulary = [
+      {
+        spelling: "clarinet",
+        phonetic: "/ˌklærəˈnet/",
+        part: "n.",
+        definition: "单簧管, 黑管，竖笛"
+      },
+      {
+        spelling: "drum",
+        phonetic: "/drʌm/",
+        part: "n.",
+        definition: "鼓"
+      },
+      {
+        spelling: "encouragement",
+        phonetic: "/ɪnˈkʌrɪdʒmənt/",
+        part: "n.",
+        definition: "鼓励，奖励"
+      },
+      {
+        spelling: "flute",
+        phonetic: "/fluːt/",
+        part: "n.",
+        definition: "长笛"
+      },
+      {
+        spelling: "folk music",
+        phonetic: "/fəʊk ˈmjuːzɪk/",
+        part: "n.",
+        definition: "民乐"
+      },
+      {
+        spelling: "French horn",
+        phonetic: "/frentʃ hɔːn/",
+        part: "n.",
+        definition: "法国圆号"
+      },
+      {
+        spelling: "Jasmine Flower",
+        phonetic: "/ˈdʒæzmɪn ˈflaʊə/",
+        part: "n.",
+        definition: "《茉莉花》"
+      },
+      {
+        spelling: "March of the Volunteers",
+        phonetic: "/mɑːtʃ ɒv ðə ˌvɒlənˈtɪəz/",
+        part: "n.",
+        definition: "《义勇军进行曲》"
+      },
+      {
+        spelling: "March of the People’s Liberation Army",
+        phonetic: "/mɑːtʃ ɒv ðə ˈpiːplz ˌlɪbəˈreɪʃn ˈɑːmi/",
+        part: "n.",
+        definition: "《解放军进行曲》"
+      },
+      {
+        spelling: "melody",
+        phonetic: "/ˈmelədi/",
+        part: "n.",
+        definition: "乐曲，歌曲"
+      },
+      {
+        spelling: "military song",
+        phonetic: "/ˈmɪlətri sɒŋ/",
+        part: "n.",
+        definition: "军歌"
+      },
+      {
+        spelling: "musical instrument",
+        phonetic: "/ˈmjuːzɪkl ˈɪnstrəmənt/",
+        part: "n.",
+        definition: "乐器"
+      },
+      {
+        spelling: "musical piece",
+        phonetic: "/ˈmjuːzɪkl piːs/",
+        part: "n.",
+        definition: "乐曲"
+      },
+      {
+        spelling: "naval band",
+        phonetic: "/ˈneɪvl bænd/",
+        part: "n.",
+        definition: "海军军乐队"
+      },
+      {
+        spelling: "obliged",
+        phonetic: "/əˈblaɪdʒd/",
+        part: "a.",
+        definition: "感谢的"
+      },
+      {
+        spelling: "oboe",
+        phonetic: "/ˈəʊbəʊ/",
+        part: "n.",
+        definition: "双簧管"
+      },
+      {
+        spelling: "performance",
+        phonetic: "/pəˈfɔːməns/",
+        part: "n.",
+        definition: "表演, 演奏"
+      },
+      {
+        spelling: "Rising Step by Step",
+        phonetic: "/ˈraɪzɪŋ step baɪ step/",
+        part: "n.",
+        definition: "《步步高》"
+      },
+      {
+        spelling: "saxophone",
+        phonetic: "/ˈsæksəfəʊn/",
+        part: "n.",
+        definition: "萨克斯管"
+      },
+      {
+        spelling: "schedule",
+        phonetic: "/ˈʃedjuːl/",
+        part: "n.",
+        definition: "计划，时间表"
+      },
+      {
+        spelling: "Sydney Opera House Square",
+        phonetic: "/ˈsɪdni ˈɒprə haʊs skweə/",
+        part: "n.",
+        definition: "悉尼歌剧院广场"
+      },
+      {
+        spelling: "Song of the Chinese Navy",
+        phonetic: "/sɒŋ ɒv ðə ˌtʃaɪˈniːz ˈneɪvi/",
+        part: "n.",
+        definition: "《海军之歌》"
+      },
+      {
+        spelling: "transportation",
+        phonetic: "/ˌtrænspɔːˈteɪʃn/",
+        part: "n.",
+        definition: "运送，输送"
+      },
+      {
+        spelling: "The Prelude to Chinese Spring Festival",
+        phonetic: "/ðə ˈpreljuːd tuː ˌtʃaɪˈniːz sprɪŋ ˈfestɪvl/",
+        part: "n.",
+        definition: "《春节序曲》"
+      },
+      {
+        spelling: "trombone",
+        phonetic: "/trɒmˈbəʊn/",
+        part: "n.",
+        definition: "长号"
+      },
+      {
+        spelling: "trumpet",
+        phonetic: "/ˈtrʌmpɪt/",
+        part: "n.",
+        definition: "小号"
+      },
+      {
+        spelling: "urheen",
+        phonetic: "/ɜːˈhiːn/",
+        part: "n.",
+        definition: "二胡，胡琴"
+      }
+    ];
+
+    // 全局状态
+    const state = {
+      currentWordIndex: 0,
+      masteredWords: [],
+      score: 0,
+      currentGame: null,
+      gameTimer: null,
+      matchingState: {
+        flippedCards: [],
+        matchedPairs: 0,
+        totalPairs: 0
+      }
+    };
+
+    // DOM 元素
+    const elements = {
+      // 欢迎界面
+      welcomeScreen: document.getElementById('welcome-screen'),
+      startLearning: document.getElementById('start-learning'),
+      startGame: document.getElementById('start-game'),
+      
+      // 学习模块
+      learningModule: document.getElementById('learning-module'),
+      backFromLearning: document.getElementById('back-from-learning'),
+      wordCard: document.getElementById('word-card'),
+      wordSpelling: document.getElementById('word-spelling'),
+      wordPhonetic: document.getElementById('word-phonetic'),
+      wordSpellingBack: document.getElementById('word-spelling-back'),
+      wordPart: document.getElementById('word-part'),
+      wordDefinition: document.getElementById('word-definition'),
+      prevWord: document.getElementById('prev-word'),
+      nextWord: document.getElementById('next-word'),
+      currentWordIndex: document.getElementById('current-word-index'),
+      totalWords: document.getElementById('total-words'),
+      markMastered: document.getElementById('mark-mastered'),
+      masteredWords: document.getElementById('mastered-words'),
+      progressPercentage: document.getElementById('progress-percentage'),
+      playPronunciation: document.getElementById('play-pronunciation'),
+      
+      // 游戏模块
+      gameModule: document.getElementById('game-module'),
+      backFromGame: document.getElementById('back-from-game'),
+      gameSelection: document.getElementById('game-selection'),
+      gameScore: document.getElementById('game-score'),
+      currentScore: document.getElementById('current-score'),
+      
+      // 配对游戏
+      matchingGame: document.getElementById('matching-game'),
+      matchingBoard: document.getElementById('matching-board'),
+      timer: document.getElementById('timer'),
+      timeLeft: document.getElementById('time-left'),
+      restartMatching: document.getElementById('restart-matching'),
+      
+      // 拼写游戏
+      spellingGame: document.getElementById('spelling-game'),
+      spellingHint: document.getElementById('spelling-hint'),
+      spellingInput: document.getElementById('spelling-input'),
+      spellingFeedback: document.getElementById('spelling-feedback'),
+      checkSpelling: document.getElementById('check-spelling'),
+      nextSpelling: document.getElementById('next-spelling'),
+      restartSpelling: document.getElementById('restart-spelling'),
+      spellingPronounce: document.getElementById('spelling-pronounce'),
+      
+      // 词义匹配游戏
+      definitionGame: document.getElementById('definition-game'),
+      definitionWord: document.getElementById('definition-word'),
+      definitionOptions: document.getElementById('definition-options'),
+      nextDefinition: document.getElementById('next-definition'),
+      restartDefinition: document.getElementById('restart-definition'),
+      
+      // 游戏结果弹窗
+      gameResultModal: document.getElementById('game-result-modal'),
+      resultIcon: document.getElementById('result-icon'),
+      resultTitle: document.getElementById('result-title'),
+      resultMessage: document.getElementById('result-message'),
+      playAgain: document.getElementById('play-again'),
+      backToGames: document.getElementById('back-to-games'),
+      
+      // 其他
+      soundToggle: document.getElementById('sound-toggle')
+    };
+
+    // 初始化应用
+    function initApp() {
+      // 设置单词总数
+      elements.totalWords.textContent = vocabulary.length;
+      
+      // 初始化学习模块显示第一个单词
+      displayWord(state.currentWordIndex);
+      
+      // 绑定事件监听
+      bindEvents();
+    }
+
+    // 绑定事件监听
+    function bindEvents() {
+      // 欢迎界面
+      elements.startLearning.addEventListener('click', () => {
+        elements.welcomeScreen.classList.add('hidden');
+        elements.learningModule.classList.remove('hidden');
+      });
+      
+      elements.startGame.addEventListener('click', () => {
+        elements.welcomeScreen.classList.add('hidden');
+        elements.gameModule.classList.remove('hidden');
+        resetGameScore();
+      });
+      
+      // 学习模块
+      elements.backFromLearning.addEventListener('click', () => {
+        elements.learningModule.classList.add('hidden');
+        elements.welcomeScreen.classList.remove('hidden');
+      });
+      
+      elements.wordCard.addEventListener('click', () => {
+        elements.wordCard.classList.toggle('card-flip-active');
+      });
+      
+      elements.prevWord.addEventListener('click', () => {
+        if (state.currentWordIndex > 0) {
+          state.currentWordIndex--;
+          displayWord(state.currentWordIndex);
+          elements.wordCard.classList.remove('card-flip-active');
+        }
+      });
+      
+      elements.nextWord.addEventListener('click', () => {
+        if (state.currentWordIndex < vocabulary.length - 1) {
+          state.currentWordIndex++;
+          displayWord(state.currentWordIndex);
+          elements.wordCard.classList.remove('card-flip-active');
+        }
+      });
+      
+      elements.markMastered.addEventListener('click', () => {
+        const word = vocabulary[state.currentWordIndex];
+        if (!state.masteredWords.includes(word.spelling)) {
+          state.masteredWords.push(word.spelling);
+          updateMasteredWordsDisplay();
+          updateProgress();
+          showFeedback('单词已标记为掌握！', 'success');
+        } else {
+          // 从已掌握列表中移除
+          state.masteredWords = state.masteredWords.filter(w => w !== word.spelling);
+          updateMasteredWordsDisplay();
+          updateProgress();
+          showFeedback('单词已从掌握列表中移除', 'info');
+        }
+      });
+      
+      elements.playPronunciation.addEventListener('click', () => {
+        const word = vocabulary[state.currentWordIndex].spelling;
+        playPronunciation(word);
+      });
+      
+      // 游戏模块
+      elements.backFromGame.addEventListener('click', () => {
+        elements.gameModule.classList.add('hidden');
+        elements.welcomeScreen.classList.remove('hidden');
+        // 停止任何正在进行的游戏
+        stopGameTimer();
+      });
+      
+      // 游戏选择
+      document.querySelectorAll('[data-game]').forEach(button => {
+        button.addEventListener('click', () => {
+          const gameType = button.getAttribute('data-game');
+          startGame(gameType);
+        });
+      });
+      
+      // 配对游戏
+      elements.restartMatching.addEventListener('click', () => {
+        startMatchingGame();
+      });
+      
+      // 拼写游戏
+      elements.checkSpelling.addEventListener('click', () => {
+        checkSpellingAnswer();
+      });
+      
+      elements.nextSpelling.addEventListener('click', () => {
+        setupSpellingQuestion();
+      });
+      
+      elements.restartSpelling.addEventListener('click', () => {
+        startSpellingGame();
+      });
+      
+      elements.spellingPronounce.addEventListener('click', () => {
+        const currentWord = state.currentSpellingWord;
+        if (currentWord) {
+          playPronunciation(currentWord.spelling);
+        }
+      });
+      
+      // 词义匹配游戏
+      elements.nextDefinition.addEventListener('click', () => {
+        setupDefinitionQuestion();
+      });
+      
+      elements.restartDefinition.addEventListener('click', () => {
+        startDefinitionGame();
+      });
+      
+      // 游戏结果弹窗
+      elements.playAgain.addEventListener('click', () => {
+        elements.gameResultModal.classList.add('hidden');
+        if (state.currentGame) {
+          startGame(state.currentGame);
+        }
+      });
+      
+      elements.backToGames.addEventListener('click', () => {
+        elements.gameResultModal.classList.add('hidden');
+        elements.matchingGame.classList.add('hidden');
+        elements.spellingGame.classList.add('hidden');
+        elements.definitionGame.classList.add('hidden');
+        elements.gameSelection.classList.remove('hidden');
+      });
+      
+      // 声音开关
+      elements.soundToggle.addEventListener('click', () => {
+        const icon = elements.soundToggle.querySelector('i');
+        if (icon.classList.contains('fa-volume-up')) {
+          icon.classList.remove('fa-volume-up');
+          icon.classList.add('fa-volume-off');
+          state.soundEnabled = false;
+        } else {
+          icon.classList.remove('fa-volume-off');
+          icon.classList.add('fa-volume-up');
+          state.soundEnabled = true;
+        }
+      });
+      
+      // 初始化声音状态
+      state.soundEnabled = true;
+    }
+
+    // 显示单词
+    function displayWord(index) {
+      const word = vocabulary[index];
+      elements.wordSpelling.textContent = word.spelling;
+      elements.wordPhonetic.textContent = word.phonetic;
+      elements.wordSpellingBack.textContent = word.spelling;
+      elements.wordPart.textContent = word.part;
+      elements.wordDefinition.textContent = word.definition;
+      elements.currentWordIndex.textContent = index + 1;
+      
+      // 更新导航按钮状态
+      elements.prevWord.disabled = index === 0;
+      elements.nextWord.disabled = index === vocabulary.length - 1;
+      
+      // 更新"已掌握"按钮状态
+      if (state.masteredWords.includes(word.spelling)) {
+        elements.markMastered.innerHTML = '<i class="fa fa-check-circle mr-1"></i> 取消掌握';
+        elements.markMastered.classList.remove('text-secondary');
+        elements.markMastered.classList.add('text-gray-500');
+      } else {
+        elements.markMastered.innerHTML = '<i class="fa fa-check-circle mr-1"></i> 已掌握';
+        elements.markMastered.classList.remove('text-gray-500');
+        elements.markMastered.classList.add('text-secondary');
+      }
+    }
+
+    // 更新已掌握单词显示
+    function updateMasteredWordsDisplay() {
+      if (state.masteredWords.length === 0) {
+        elements.masteredWords.innerHTML = '<p class="text-gray-500 italic">尚未掌握任何单词</p>';
+        return;
+      }
+      
+      elements.masteredWords.innerHTML = '';
+      state.masteredWords.forEach(word => {
+        const badge = document.createElement('span');
+        badge.className = 'bg-secondary/10 text-secondary text-xs px-2 py-1 rounded-full flex items-center';
+        badge.innerHTML = `${word} <i class="fa fa-times-circle ml-1 cursor-pointer" data-word="${word}"></i>`;
+        elements.masteredWords.appendChild(badge);
+      });
+      
+      // 为删除按钮添加事件
+      document.querySelectorAll('#mastered-words .fa-times-circle').forEach(icon => {
+        icon.addEventListener('click', (e) => {
+          const word = e.target.getAttribute('data-word');
+          state.masteredWords = state.masteredWords.filter(w => w !== word);
+          updateMasteredWordsDisplay();
+          updateProgress();
+          // 如果当前显示的单词被移除，更新按钮状态
+          if (vocabulary[state.currentWordIndex].spelling === word) {
+            displayWord(state.currentWordIndex);
+          }
+        });
+      });
+    }
+
+    // 更新学习进度
+    function updateProgress() {
+      const percentage = Math.round((state.masteredWords.length / vocabulary.length) * 100);
+      elements.progressPercentage.textContent = `${percentage}%`;
+    }
+
+    // 显示反馈信息
+    function showFeedback(message, type = 'info') {
+      // 创建临时反馈元素
+      const feedback = document.createElement('div');
+      feedback.className = `fixed top-20 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-lg text-white z-50 transition-all duration-300 opacity-0`;
+      
+      // 设置不同类型的样式
+      if (type === 'success') {
+        feedback.classList.add('bg-secondary');
+        feedback.innerHTML = `<i class="fa fa-check mr-2"></i>${message}`;
+      } else if (type === 'error') {
+        feedback.classList.add('bg-red-500');
+        feedback.innerHTML = `<i class="fa fa-times mr-2"></i>${message}`;
+      } else {
+        feedback.classList.add('bg-primary');
+        feedback.innerHTML = `<i class="fa fa-info mr-2"></i>${message}`;
+      }
+      
+      document.body.appendChild(feedback);
+      
+      // 显示动画
+      setTimeout(() => {
+        feedback.classList.add('opacity-100');
+      }, 10);
+      
+      // 3秒后隐藏
+      setTimeout(() => {
+        feedback.classList.remove('opacity-100');
+        setTimeout(() => {
+          document.body.removeChild(feedback);
+        }, 300);
+      }, 3000);
+    }
+
+    // 播放单词发音
+    function playPronunciation(word) {
+      if (!state.soundEnabled) return;
+      
+      // 使用Web Speech API
+      const utterance = new SpeechSynthesisUtterance(word);
+      utterance.lang = 'en-US';
+      speechSynthesis.speak(utterance);
+    }
+
+    // 开始游戏
+    function startGame(gameType) {
+      state.currentGame = gameType;
+      resetGameScore();
+      
+      // 隐藏游戏选择，显示对应游戏
+      elements.gameSelection.classList.add('hidden');
+      elements.matchingGame.classList.add('hidden');
+      elements.spellingGame.classList.add('hidden');
+      elements.definitionGame.classList.add('hidden');
+      
+      if (gameType === 'matching') {
+        elements.matchingGame.classList.remove('hidden');
+        startMatchingGame();
+      } else if (gameType === 'spelling') {
+        elements.spellingGame.classList.remove('hidden');
+        startSpellingGame();
+      } else if (gameType === 'definition') {
+        elements.definitionGame.classList.remove('hidden');
+        startDefinitionGame();
+      }
+    }
+
+    // 重置游戏分数
+    function resetGameScore() {
+      state.score = 0;
+      elements.currentScore.textContent = state.score;
+    }
+
+    // 增加分数
+    function increaseScore(points = 10) {
+      state.score += points;
+      elements.currentScore.textContent = state.score;
+      
+      // 分数动画
+      elements.gameScore.classList.add('scale-125');
+      setTimeout(() => {
+        elements.gameScore.classList.remove('scale-125');
+      }, 300);
+    }
+
+    // 开始配对游戏
+    function startMatchingGame() {
+      state.matchingState = {
+        flippedCards: [],
+        matchedPairs: 0,
+        totalPairs: 0
+      };
+      
+      // 选择8个单词来进行配对
+      const shuffledWords = [...vocabulary].sort(() => Math.random() - 0.5).slice(0, 8);
+      state.matchingState.totalPairs = shuffledWords.length;
+      
+      // 创建卡片数组：每个单词和对应的释义
+      const cards = [];
+      shuffledWords.forEach(word => {
+        cards.push({
+          type: 'word',
+          content: word.spelling,
+          pairId: word.spelling
+        });
+        cards.push({
+          type: 'definition',
+          content: word.definition,
+          pairId: word.spelling
+        });
+      });
+      
+      // 打乱卡片顺序
+      const shuffledCards = cards.sort(() => Math.random() - 0.5);
+      
+      // 清空游戏板并添加卡片
+      elements.matchingBoard.innerHTML = '';
+      shuffledCards.forEach((card, index) => {
+        const cardElement = document.createElement('div');
+        cardElement.className = 'matching-card relative aspect-square cursor-pointer';
+        cardElement.innerHTML = `
+          <div class="absolute inset-0 rounded-xl shadow-md transition-all duration-300 transform-style-3d">
+            <!-- 卡片正面 -->
+            <div class="absolute inset-0 bg-primary/10 rounded-xl flex items-center justify-center backface-visibility-hidden">
+              <i class="fa fa-music text-primary/50 text-2xl"></i>
+            </div>
+            <!-- 卡片背面 -->
+            <div class="absolute inset-0 bg-white rounded-xl flex items-center justify-center p-3 text-center transform rotate-y-180 backface-visibility-hidden ${card.type === 'word' ? 'text-primary font-semibold' : 'text-gray-700'}">
+              ${card.content}
+            </div>
+          </div>
+        `;
+        
+        // 添加点击事件
+        cardElement.addEventListener('click', () => {
+          flipMatchingCard(cardElement, card);
+        });
+        
+        elements.matchingBoard.appendChild(cardElement);
+      });
+      
+      // 开始计时
+      startGameTimer(60);
+    }
+
+    // 翻转配对卡片
+    function flipMatchingCard(cardElement, cardData) {
+      // 如果已经翻开两张卡片，或者这张卡片已经翻开，或者已经匹配成功，则不执行操作
+      if (state.matchingState.flippedCards.length >= 2 || 
+          cardElement.classList.contains('flipped') || 
+          cardElement.classList.contains('matched')) {
+        return;
+      }
+      
+      // 翻转卡片
+      cardElement.classList.add('flipped');
+      const innerCard = cardElement.querySelector('div');
+      innerCard.classList.add('rotate-y-180');
+      
+      // 记录翻开的卡片
+      state.matchingState.flippedCards.push({
+        element: cardElement,
+        data: cardData
+      });
+      
+      // 如果翻开了两张卡片，检查是否匹配
+      if (state.matchingState.flippedCards.length === 2) {
+        setTimeout(checkMatchingPair, 500);
+      }
+    }
+
+    // 检查配对是否成功
+    function checkMatchingPair() {
+      const [card1, card2] = state.matchingState.flippedCards;
+      
+      if (card1.data.pairId === card2.data.pairId) {
+        // 匹配成功
+        card1.element.classList.add('matched', 'opacity-70');
+        card2.element.classList.add('matched', 'opacity-70');
+        
+        // 改变匹配成功卡片的背景色
+        card1.element.querySelector('.rotate-y-180').classList.add('bg-secondary/10');
+        card2.element.querySelector('.rotate-y-180').classList.add('bg-secondary/10');
+        
+        state.matchingState.matchedPairs++;
+        increaseScore(15);
+        
+        // 检查游戏是否结束
+        if (state.matchingState.matchedPairs === state.matchingState.totalPairs) {
+          stopGameTimer();
+          setTimeout(() => {
+            showGameResult(
+              '恭喜你！', 
+              `你成功完成了所有军乐词汇配对，得分: ${state.score}`, 
+              'success'
+            );
+          }, 500);
+        }
+      } else {
+        // 匹配失败，翻回
+        setTimeout(() => {
+          card1.element.classList.remove('flipped');
+          card2.element.classList.remove('flipped');
+          card1.element.querySelector('div').classList.remove('rotate-y-180');
+          card2.element.querySelector('div').classList.remove('rotate-y-180');
+        }, 1000);
+      }
+      
+      // 重置已翻开卡片列表
+      state.matchingState.flippedCards = [];
+    }
+
+    // 开始游戏计时器
+    function startGameTimer(seconds) {
+      // 清除任何现有的计时器
+      stopGameTimer();
+      
+      let timeRemaining = seconds;
+      elements.timeLeft.textContent = timeRemaining;
+      
+      state.gameTimer = setInterval(() => {
+        timeRemaining--;
+        elements.timeLeft.textContent = timeRemaining;
+        
+        // 时间快用完时添加视觉提示
+        if (timeRemaining <= 10) {
+          elements.timer.classList.add('animate-pulse');
+        }
+        
+        if (timeRemaining <= 0) {
+          stopGameTimer();
+          elements.timer.classList.remove('animate-pulse');
+          
+          // 显示游戏结果
+          showGameResult(
+            '时间到！', 
+            `游戏结束，你的军乐词汇配对得分: ${state.score}`, 
+            'info'
+          );
+        }
+      }, 1000);
+    }
+
+    // 停止游戏计时器
+    function stopGameTimer() {
+      if (state.gameTimer) {
+        clearInterval(state.gameTimer);
+        state.gameTimer = null;
+      }
+    }
+
+    // 开始拼写游戏
+    function startSpellingGame() {
+      resetGameScore();
+      setupSpellingQuestion();
+    }
+
+    // 设置拼写问题
+    function setupSpellingQuestion() {
+      // 随机选择一个单词
+      const randomIndex = Math.floor(Math.random() * vocabulary.length);
+      state.currentSpellingWord = vocabulary[randomIndex];
+      
+      // 重置界面
+      elements.spellingHint.textContent = `释义: ${state.currentSpellingWord.definition}`;
+      elements.spellingInput.value = '';
+      elements.spellingFeedback.classList.add('hidden');
+      elements.checkSpelling.classList.remove('hidden');
+      elements.nextSpelling.classList.add('hidden');
+      
+      // 自动聚焦输入框
+      elements.spellingInput.focus();
+    }
+
+    // 检查拼写答案
+    function checkSpellingAnswer() {
+      const userAnswer = elements.spellingInput.value.trim().toLowerCase();
+      const correctAnswer = state.currentSpellingWord.spelling.toLowerCase();
+      
+      elements.spellingFeedback.classList.remove('hidden');
+      
+      if (userAnswer === correctAnswer) {
+        // 正确
+        elements.spellingFeedback.textContent = '正确！太棒了！';
+        elements.spellingFeedback.className = 'mt-3 text-sm text-secondary';
+        increaseScore(20);
+        elements.checkSpelling.classList.add('hidden');
+        elements.nextSpelling.classList.remove('hidden');
+        
+        // 如果已经回答了10个问题，结束游戏
+        if (state.score >= 200) {
+          setTimeout(() => {
+            showGameResult(
+              '恭喜完成！', 
+              `你完成了军乐词汇拼写测验，最终得分: ${state.score}`, 
+              'success'
+            );
+          }, 1000);
+        }
+      } else {
+        // 错误
+        elements.spellingFeedback.textContent = `不正确。正确答案是: ${state.currentSpellingWord.spelling}`;
+        elements.spellingFeedback.className = 'mt-3 text-sm text-red-500';
+        elements.checkSpelling.classList.add('hidden');
+        elements.nextSpelling.classList.remove('hidden');
+      }
+    }
+
+    // 开始词义匹配游戏
+    function startDefinitionGame() {
+      resetGameScore();
+      setupDefinitionQuestion();
+    }
+
+    // 设置词义匹配问题
+    function setupDefinitionQuestion() {
+      // 随机选择一个单词作为问题
+      const correctIndex = Math.floor(Math.random() * vocabulary.length);
+      state.currentDefinitionWord = vocabulary[correctIndex];
+      
+      // 显示单词
+      elements.definitionWord.textContent = state.currentDefinitionWord.spelling;
+      
+      // 生成选项：1个正确答案 + 3个干扰项
+      const allDefinitions = vocabulary.map(word => word.definition);
+      const correctDefinition = state.currentDefinitionWord.definition;
+      
+      // 过滤掉正确答案，然后随机选择3个
+      const otherDefinitions = allDefinitions.filter(def => def !== correctDefinition);
+      const shuffledOthers = otherDefinitions.sort(() => Math.random() - 0.5).slice(0, 3);
+      
+      // 合并选项并打乱顺序
+      const options = [correctDefinition, ...shuffledOthers].sort(() => Math.random() - 0.5);
+      
+      // 显示选项
+      elements.definitionOptions.innerHTML = '';
+      options.forEach((option, index) => {
+        const optionElement = document.createElement('div');
+        optionElement.className = 'p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors';
+        optionElement.innerHTML = `<span class="font-medium mr-2">${String.fromCharCode(65 + index)}</span>${option}`;
+        
+        // 添加点击事件
+        optionElement.addEventListener('click', () => {
+          checkDefinitionAnswer(option === correctDefinition, optionElement);
+        });
+        
+        elements.definitionOptions.appendChild(optionElement);
+      });
+      
+      // 重置按钮状态
+      elements.nextDefinition.classList.add('hidden');
+    }
+
+    // 检查词义匹配答案
+    function checkDefinitionAnswer(isCorrect, selectedElement) {
+      // 禁用所有选项
+      document.querySelectorAll('#definition-options > div').forEach(option => {
+        option.classList.remove('hover:bg-gray-50', 'cursor-pointer');
+        option.style.pointerEvents = 'none';
+      });
+      
+      if (isCorrect) {
+        // 正确
+        selectedElement.classList.add('bg-secondary/10', 'border-secondary');
+        increaseScore(15);
+      } else {
+        // 错误，显示正确答案
+        selectedElement.classList.add('bg-red-50', 'border-red-200');
+        
+        document.querySelectorAll('#definition-options > div').forEach(option => {
+          if (option.textContent.includes(state.currentDefinitionWord.definition)) {
+            option.classList.add('bg-secondary/10', 'border-secondary');
+          }
+        });
+      }
+      
+      // 显示下一题按钮
+      elements.nextDefinition.classList.remove('hidden');
+      
+      // 如果已经回答了10个问题，结束游戏
+      if (state.score >= 150) {
+        setTimeout(() => {
+          showGameResult(
+            '恭喜完成！', 
+            `你完成了军乐词汇释义匹配，最终得分: ${state.score}`, 
+            'success'
+          );
+        }, 1000);
+      }
+    }
+
+    // 显示游戏结果
+    function showGameResult(title, message, type = 'info') {
+      elements.resultTitle.textContent = title;
+      elements.resultMessage.textContent = message;
+      
+      // 设置结果图标样式
+      elements.resultIcon.className = 'w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center';
+      
+      if (type === 'success') {
+        elements.resultIcon.classList.add('bg-secondary/20', 'text-secondary');
+        elements.resultIcon.innerHTML = '<i class="fa fa-trophy text-2xl"></i>';
+      } else if (type === 'error') {
+        elements.resultIcon.classList.add('bg-red-100', 'text-red-500');
+        elements.resultIcon.innerHTML = '<i class="fa fa-times-circle text-2xl"></i>';
+      } else {
+        elements.resultIcon.classList.add('bg-primary/20', 'text-primary');
+        elements.resultIcon.innerHTML = '<i class="fa fa-info-circle text-2xl"></i>';
+      }
+      
+      // 显示结果弹窗
+      elements.gameResultModal.classList.remove('hidden');
+    }
+
+    // 初始化应用
+    document.addEventListener('DOMContentLoaded', initApp);
+  </script>
+</body>
+</html>

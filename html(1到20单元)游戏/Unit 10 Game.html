@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>海上遇险与搜救</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- 配置Tailwind自定义颜色和字体 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0A4DA2',
+                        secondary: '#39B5E0',
+                        accent: '#FF6B35',
+                        dark: '#0F3460',
+                        light: '#E8F4F8'
+                    },
+                    fontFamily: {
+                        game: ['"Comic Sans MS"', '"Marker Felt"', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .text-shadow {
+                text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+            }
+            .falling-char {
+                position: absolute;
+                color: #fff;
+                user-select: none;
+                pointer-events: auto;
+                cursor: pointer;
+                text-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+                transition: transform 0.2s;
+            }
+            .falling-char:hover {
+                transform: scale(1.2);
+            }
+            .letter-slot {
+                width: 36px;
+                height: 50px;
+                margin: 0 4px;
+                border-bottom: 4px solid #FFFFFF;
+                display: flex;
+                align-items: flex-end;
+                justify-content: center;
+                font-size: 1.5rem;
+                font-weight: bold;
+                color: #FFFFFF;
+                text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+            }
+            .missing-letter {
+                color: transparent;
+                text-shadow: none;
+            }
+            .correct {
+                animation: correct 0.5s ease-in-out;
+            }
+            .wrong {
+                animation: wrong 0.5s ease-in-out;
+            }
+            .confetti {
+                position: absolute;
+                width: 6px;
+                height: 6px;
+                opacity: 0;
+            }
+            @keyframes correct {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.3); color: #36CFC9; }
+                100% { transform: scale(1); }
+            }
+            @keyframes wrong {
+                0% { transform: translateX(0); }
+                25% { transform: translateX(-3px); }
+                50% { transform: translateX(3px); }
+                75% { transform: translateX(-3px); }
+                100% { transform: translateX(0); color: #FF5252; }
+            }
+            @keyframes pulse {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.05); }
+                100% { transform: scale(1); }
+            }
+            @keyframes confetti-fall {
+                0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+                100% { transform: translateY(100px) rotate(360deg); opacity: 0; }
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-cyan-100 min-h-screen font-game text-dark overflow-x-hidden">
+    <!-- 游戏容器 -->
+    <div class="container mx-auto px-2 py-3 max-w-7xl">
+        <!-- 游戏标题 -->
+        <header class="text-center mb-3">
+            <h1 class="text-[clamp(1.2rem,3vw,1.6rem)] font-bold text-primary text-shadow">海上遇险与搜救</h1>
+            <p class="text-gray-600 text-xs">点击飘落的元音字母，完成单词拼写！</p>
+        </header>
+        
+        <!-- 游戏模式选择 -->
+        <div id="mode-selection" class="text-center py-2 mb-3">
+            <h2 class="text-sm mb-2">选择游戏模式</h2>
+            <div class="flex flex-col md:flex-row justify-center gap-2 mb-4">
+                <button id="timed-mode" class="bg-primary hover:bg-primary/90 text-white py-1.5 px-4 rounded-lg text-sm transition-all duration-300 shadow-md hover:shadow-lg">
+                    <i class="fa fa-clock-o mr-1"></i>5分钟模式
+                </button>
+                <button id="untimed-mode" class="bg-accent hover:bg-accent/90 text-white py-1.5 px-4 rounded-lg text-sm transition-all duration-300 shadow-md hover:shadow-lg">
+                    <i class="fa fa-infinity mr-1"></i>不限时模式
+                </button>
+            </div>
+            
+            <!-- 玩法说明区域 -->
+            <div class="bg-white rounded-lg shadow-md p-3 max-w-md mx-auto text-left">
+                <h3 class="text-xs font-bold text-primary mb-2 flex items-center">
+                    <i class="fa fa-info-circle mr-1"></i>玩法说明
+                </h3>
+                <ul class="text-xs text-gray-700 space-y-1.5">
+                    <li class="flex items-start">
+                        <i class="fa fa-check-circle text-secondary mt-0.5 mr-2 text-[9px]"></i>
+                        <span>游戏会展示带有缺失元音字母的单词，您需要补全这些元音</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fa fa-check-circle text-secondary mt-0.5 mr-2 text-[9px]"></i>
+                        <span>屏幕上方会有元音字母(A、E、I、O、U)飘落，点击正确的元音字母填充到单词中</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fa fa-check-circle text-secondary mt-0.5 mr-2 text-[9px]"></i>
+                        <span>选择正确的元音字母加1分，选择错误的元音字母扣1分</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fa fa-check-circle text-secondary mt-0.5 mr-2 text-[9px]"></i>
+                        <span>完成一个单词后会有掌声鼓励，并自动进入下一个单词</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fa fa-check-circle text-secondary mt-0.5 mr-2 text-[9px]"></i>
+                        <span>5分钟模式：在限定时间内完成尽可能多的单词；不限时模式：无时间限制，直到完成所有单词</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- 游戏界面 (默认隐藏) -->
+        <div id="game-container" class="hidden grid grid-cols-1 lg:grid-cols-5 gap-3">
+            <!-- 左侧提示区 - 只显示单词意义和发音 -->
+            <div class="lg:col-span-1 bg-white rounded-lg shadow-md p-2 h-[100px] flex flex-col">
+                <h2 class="text-xs font-bold mb-1 text-primary border-b pb-0.5">单词提示</h2>
+                <div id="word-meaning" class="flex-grow overflow-y-auto mb-1 text-xs leading-tight">
+                    <p class="text-gray-700 italic">单词含义将在这里显示</p>
+                </div>
+                <div id="word-pronunciation" class="bg-gray-100 p-1 rounded text-[10px]">
+                    <p class="text-gray-600"><i class="fa fa-volume-up mr-1"></i>发音: <span id="pronunciation-text">--</span></p>
+                </div>
+            </div>
+            
+            <!-- 右侧游戏区 - 显示缺失元音字母的单词 -->
+            <div class="lg:col-span-4 relative bg-gradient-to-b from-primary to-dark rounded-lg shadow-md overflow-hidden h-[480px]">
+                <!-- 游戏信息栏 -->
+                <div class="bg-dark/50 text-white p-1.5 flex justify-between items-center">
+                    <div class="text-sm">
+                        <span id="timer" class="mr-2"><i class="fa fa-clock-o mr-0.5"></i>05:00</span>
+                        <span id="score"><i class="fa fa-star mr-0.5"></i>得分: 0</span>
+                    </div>
+                    <div class="text-sm">
+                        <span id="current-word-count">单词: 0/0</span>
+                        <button id="pause-btn" class="ml-2 bg-white/20 hover:bg-white/30 p-1 rounded-full transition-colors">
+                            <i class="fa fa-pause"></i>
+                        </button>
+                        <button id="quit-btn" class="ml-1 bg-white/20 hover:bg-white/30 p-1 rounded-full transition-colors">
+                            <i class="fa fa-sign-out"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 元音字母飘落区域 -->
+                <div id="game-area" class="h-[calc(100%-110px)] relative overflow-hidden">
+                    <!-- 背景装饰元素 -->
+                    <div class="absolute inset-0 opacity-10">
+                        <div class="absolute top-1/4 left-1/4 w-16 h-16 bg-white rounded-full"></div>
+                        <div class="absolute top-1/3 right-1/3 w-10 h-10 bg-white rounded-full"></div>
+                        <div class="absolute bottom-1/4 left-1/3 w-12 h-12 bg-white rounded-full"></div>
+                        <div class="absolute bottom-1/3 right-1/4 w-8 h-8 bg-white rounded-full"></div>
+                    </div>
+                </div>
+                
+                <!-- 单词显示区域 - 确保清晰可见 -->
+                <div class="bg-white/10 backdrop-blur-sm p-4 h-[80px] flex items-center justify-center border-t border-white/20">
+                    <div id="word-slots" class="flex justify-center items-center h-full gap-2 flex-wrap">
+                        <!-- 单词的字母槽会动态添加到这里 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 暂停菜单 -->
+        <div id="pause-menu" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+            <div class="bg-white rounded-lg p-3 max-w-xs w-full text-center">
+                <h2 class="text-sm font-bold mb-2 text-primary">游戏暂停</h2>
+                <div class="flex flex-col gap-1">
+                    <button id="resume-btn" class="bg-primary hover:bg-primary/90 text-white py-1 px-3 rounded transition-colors text-xs">
+                        <i class="fa fa-play mr-1"></i>继续游戏
+                    </button>
+                    <button id="restart-btn" class="bg-accent hover:bg-accent/90 text-white py-1 px-3 rounded transition-colors text-xs">
+                        <i class="fa fa-refresh mr-1"></i>重新开始
+                    </button>
+                    <button id="quit-to-main-btn" class="bg-gray-500 hover:bg-gray-600 text-white py-1 px-3 rounded transition-colors text-xs">
+                        <i class="fa fa-home mr-1"></i>返回主菜单
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 游戏结束界面 -->
+        <div id="game-over" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+            <div class="bg-white rounded-lg p-3 max-w-xs w-full text-center">
+                <h2 class="text-lg font-bold mb-1 text-primary">游戏结束!</h2>
+                <p id="final-score" class="text-sm mb-2">最终得分: 0</p>
+                <p id="words-completed" class="text-gray-600 text-xs mb-2">完成单词: 0/0</p>
+                <div class="flex flex-col sm:flex-row gap-1 justify-center">
+                    <button id="play-again-btn" class="bg-primary hover:bg-primary/90 text-white py-1 px-3 rounded transition-colors text-xs">
+                        <i class="fa fa-refresh mr-1"></i>再玩一次
+                    </button>
+                    <button id="back-to-main-btn" class="bg-gray-500 hover:bg-gray-600 text-white py-1 px-3 rounded transition-colors text-xs">
+                        <i class="fa fa-home mr-1"></i>返回主菜单
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 音效元素 -->
+    <audio id="correct-sound" preload="auto">
+        <source src="https://www.soundjay.com/button/beep-07.wav" type="audio/wav">
+    </audio>
+    <audio id="wrong-sound" preload="auto">
+        <source src="https://www.soundjay.com/button/beep-03.wav" type="audio/wav">
+    
+    <audio id="word-complete-sound" preload="auto">
+        <source src="https://www.soundjay.com/people/cheer-02.wav" type="audio/wav">
+    </audio>
+    <audio id="game-complete-sound" preload="auto">
+        <source src="https://www.soundjay.com/achievement/bell-ting-01.wav" type="audio/wav">
+    
+
+    <script>
+        // 海上遇险与搜救相关单词数据
+        const wordData = [
+            { word: "aground", pronunciation: "/əˈɡraʊnd/", meaning: "a. 搁浅的，地面上" },
+            { word: "capsize", pronunciation: "/kæpˈsaɪz/", meaning: "vi.（特指船）倾覆" },
+            { word: "column", pronunciation: "/ˈkɒləm/", meaning: "n. 纵队" },
+            { word: "damage control", pronunciation: "/ˈdæmɪdʒ kənˈtrəʊl/", meaning: "损管" },
+            { word: "distress", pronunciation: "/dɪˈstres/", meaning: "n. 危难，不幸" },
+            { word: "distress alert", pronunciation: "/dɪˈstres əˈlɜːt/", meaning: "遇险警报" },
+            { word: "drift", pronunciation: "/drɪft/", meaning: "vt.（使）漂流" },
+            { word: "evacuation", pronunciation: "/ɪˌvækjuˈeɪʃn/", meaning: "n. 撤退" },
+            { word: "extinguisher", pronunciation: "/ɪkˈstɪŋɡwɪʃə(r)/", meaning: "n. 熄灭者，灭火器" },
+            { word: "foam", pronunciation: "/fəʊm/", meaning: "n. 泡沫" },
+            { word: "formation", pronunciation: "/fɔːˈmeɪʃn/", meaning: "n. 编队" },
+            { word: "leak", pronunciation: "/liːk/", meaning: "n. 漏洞，渗漏" },
+            { word: "list", pronunciation: "/lɪst/", meaning: "vi. 横倾" },
+            { word: "Mayday", pronunciation: "/ˈmeɪdeɪ/", meaning: "n. 救难信号" },
+            { word: "overboard", pronunciation: "/ˈəʊvəbɔːd/", meaning: "adv. 自船上落下，在船外" },
+            { word: "patrol", pronunciation: "/pəˈtrəʊl/", meaning: "n. 巡逻" },
+            { word: "Pan-pan", pronunciation: "/pæn pæn/", meaning: "n. 救难信号" },
+            { word: "pump", pronunciation: "/pʌmp/", meaning: "n. 泵，抽水机" },
+            { word: "Securite", pronunciation: "/sɪˈkjʊərɪteɪ/", meaning: "n. 安全信息通告" },
+            { word: "task group", pronunciation: "/tɑːsk ɡruːp/", meaning: "（军）特遣部队" },
+            { word: "vicinity", pronunciation: "/vəˈsɪnəti/", meaning: "n. 邻近，附近，接近" }
+        ];
+
+        // 游戏状态变量
+        let gameState = {
+            mode: null, // 'timed' 或 'untimed'
+            score: 0,
+            currentWordIndex: 0,
+            shuffledWords: [], // 存储随机排序的单词
+            currentWordData: null,
+            currentWordState: [],
+            remainingTime: 300, // 5分钟(秒)
+            timerInterval: null,
+            vowelInterval: null,
+            isPaused: false,
+            completedWords: 0,
+            totalWords: wordData.length,
+            gameArea: null,
+            wordSlots: null,
+            wordMeaning: null,
+            wordPronunciation: null,
+            timerDisplay: null,
+            scoreDisplay: null,
+            wordCountDisplay: null,
+            sounds: {
+                correct: document.getElementById('correct-sound'),
+                wrong: document.getElementById('wrong-sound'),
+                wordComplete: document.getElementById('word-complete-sound'),
+                gameComplete: document.getElementById('game-complete-sound')
+            }
+        };
+
+        // DOM元素
+        const elements = {
+            modeSelection: document.getElementById('mode-selection'),
+            gameContainer: document.getElementById('game-container'),
+            pauseMenu: document.getElementById('pause-menu'),
+            gameOver: document.getElementById('game-over'),
+            timedModeBtn: document.getElementById('timed-mode'),
+            untimedModeBtn: document.getElementById('untimed-mode'),
+            pauseBtn: document.getElementById('pause-btn'),
+            quitBtn: document.getElementById('quit-btn'),
+            resumeBtn: document.getElementById('resume-btn'),
+            restartBtn: document.getElementById('restart-btn'),
+            quitToMainBtn: document.getElementById('quit-to-main-btn'),
+            playAgainBtn: document.getElementById('play-again-btn'),
+            backToMainBtn: document.getElementById('back-to-main-btn'),
+            finalScore: document.getElementById('final-score'),
+            wordsCompleted: document.getElementById('words-completed')
+        };
+
+        // 随机打乱数组顺序的函数 (Fisher-Yates 洗牌算法)
+        function shuffleArray(array) {
+            // 创建数组副本，避免修改原始数据
+            const newArray = [...array];
+            for (let i = newArray.length - 1; i > 0; i--) {
+                // 生成0到i之间的随机索引
+                const j = Math.floor(Math.random() * (i + 1));
+                // 交换元素
+                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            }
+            return newArray;
+        }
+
+        // 初始化音频播放
+        function initAudio() {
+            document.addEventListener('click', unlockAudio, { once: true });
+        }
+
+        // 解锁音频播放功能
+        function unlockAudio() {
+            // 预加载所有音效
+            const sounds = [
+                gameState.sounds.correct,
+                gameState.sounds.wrong,
+                gameState.sounds.wordComplete,
+                gameState.sounds.gameComplete
+            ];
+            
+            sounds.forEach(sound => {
+                sound.volume = 0.0;
+                sound.play().then(() => {
+                    sound.pause();
+                    sound.currentTime = 0;
+                    sound.volume = 0.7; // 统一设置音量为70%，避免过大
+                }).catch(e => console.log("音效预加载失败:", e));
+            });
+        }
+
+        // 创建庆祝彩屑效果
+        function createConfetti(x, y) {
+            const colors = ['#39B5E0', '#FF6B35', '#FFFFFF', '#0A4DA2', '#E8F4F8', '#0F3460'];
+            const gameArea = gameState.gameArea;
+            
+            for (let i = 0; i < 12; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.left = `${x}px`;
+                confetti.style.top = `${y}px`;
+                confetti.style.width = `${Math.random() * 4 + 2}px`;
+                confetti.style.height = `${Math.random() * 4 + 2}px`;
+                confetti.style.animation = `confetti-fall ${Math.random() * 1.5 + 0.5}s linear`;
+                confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+                confetti.style.left = `${x + (Math.random() * 40 - 20)}px`;
+                
+                gameArea.appendChild(confetti);
+                
+                setTimeout(() => {
+                    if (confetti.parentNode) confetti.remove();
+                }, 2000);
+            }
+        }
+
+        // 初始化游戏
+        function initGame() {
+            // 每次游戏初始化时打乱单词顺序
+            gameState.shuffledWords = shuffleArray(wordData);
+            
+            gameState.gameArea = document.getElementById('game-area');
+            gameState.wordSlots = document.getElementById('word-slots');
+            gameState.wordMeaning = document.getElementById('word-meaning');
+            gameState.wordPronunciation = document.getElementById('pronunciation-text');
+            gameState.timerDisplay = document.getElementById('timer');
+            gameState.scoreDisplay = document.getElementById('score');
+            gameState.wordCountDisplay = document.getElementById('current-word-count');
+            
+            // 重置游戏状态
+            gameState.score = 0;
+            gameState.currentWordIndex = 0;
+            gameState.completedWords = 0;
+            gameState.isPaused = false;
+            
+            updateScore();
+            updateWordCount();
+            
+            if (gameState.mode === 'timed') {
+                gameState.remainingTime = 300;
+                updateTimer();
+                startTimer();
+            } else {
+                gameState.timerDisplay.innerHTML = '<i class="fa fa-infinity mr-0.5"></i>不限时';
+            }
+            
+            startVowels();
+            loadNextWord();
+        }
+
+        // 加载下一个单词 - 从随机排序的单词列表中获取
+        function loadNextWord() {
+            gameState.wordSlots.innerHTML = '';
+            
+            if (gameState.currentWordIndex >= gameState.shuffledWords.length) {
+                // 播放游戏完成音效
+                gameState.sounds.gameComplete.currentTime = 0;
+                gameState.sounds.gameComplete.play().catch(e => console.log("音效播放失败:", e));
+                endGame();
+                return;
+            }
+            
+            // 从随机排序的单词数组中获取当前单词
+            gameState.currentWordData = gameState.shuffledWords[gameState.currentWordIndex];
+            const word = gameState.currentWordData.word;
+            
+            // 提示区只显示意义和发音
+            gameState.wordMeaning.innerHTML = `<p class="text-[10px]">${gameState.currentWordData.meaning}</p>`;
+            gameState.wordPronunciation.textContent = gameState.currentWordData.pronunciation || '--';
+            
+            gameState.currentWordState = [];
+            const vowels = ['a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U'];
+            
+            for (let i = 0; i < word.length; i++) {
+                const char = word[i];
+                const isVowel = vowels.includes(char);
+                
+                const slot = document.createElement('div');
+                slot.className = 'letter-slot';
+                slot.dataset.index = i;
+                
+                if (isVowel && char !== ' ') {
+                    // 元音字母位置显示为下划线，等待填充
+                    slot.textContent = char;
+                    slot.classList.add('missing-letter'); // 暂时隐藏元音
+                    gameState.currentWordState.push({
+                        char: char.toLowerCase(),
+                        isVowel: true,
+                        filled: false
+                    });
+                } else if (char === ' ') {
+                    slot.className = 'w-4';
+                    slot.textContent = '';
+                    gameState.currentWordState.push({
+                        char: ' ',
+                        isVowel: false,
+                        filled: true
+                    });
+                } else {
+                    // 显示辅音字母，确保在蓝色背景上清晰可见
+                    slot.textContent = char;
+                    gameState.currentWordState.push({
+                        char: char,
+                        isVowel: false,
+                        filled: true
+                    });
+                }
+                
+                gameState.wordSlots.appendChild(slot);
+            }
+            
+            gameState.currentWordIndex++;
+            updateWordCount();
+        }
+
+        // 检查是否当前单词已完成
+        function checkWordComplete() {
+            for (let state of gameState.currentWordState) {
+                if (state.isVowel && !state.filled) return false;
+            }
+            return true;
+        }
+
+        // 处理元音字母点击
+        function handleVowelClick(event, vowel, fallingChar) {
+            if (gameState.isPaused) return;
+            
+            const rect = gameState.gameArea.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            
+            for (let i = 0; i < gameState.currentWordState.length; i++) {
+                const state = gameState.currentWordState[i];
+                if (state.isVowel && !state.filled) {
+                    if (vowel.toLowerCase() === state.char) {
+                        gameState.score += 1;
+                        updateScore();
+                        
+                        gameState.sounds.correct.currentTime = 0;
+                        gameState.sounds.correct.play().catch(e => console.log("音效播放失败:", e));
+                        
+                        const slot = gameState.wordSlots.querySelector(`[data-index="${i}"]`);
+                        slot.classList.remove('missing-letter'); // 显示正确的元音
+                        slot.classList.add('correct');
+                        setTimeout(() => slot.classList.remove('correct'), 500);
+                        
+                        createConfetti(x, y);
+                        state.filled = true;
+                        fallingChar.remove();
+                        
+                        if (checkWordComplete()) {
+                            gameState.completedWords++;
+                            updateWordCount();
+                            
+                            // 播放单词完成音效（掌声）
+                            gameState.sounds.wordComplete.currentTime = 0;
+                            gameState.sounds.wordComplete.play().catch(e => console.log("音效播放失败:", e));
+                            
+                            setTimeout(() => {
+                                Array.from(gameState.wordSlots.children).forEach(slot => {
+                                    if (slot.classList.contains('letter-slot')) slot.classList.add('correct');
+                                });
+                                
+                                setTimeout(() => loadNextWord(), 1200); // 延长等待时间，让玩家听到完整音效
+                            }, 400);
+                        }
+                    } else {
+                        if (gameState.score > 0) {
+                            gameState.score -= 1;
+                            updateScore();
+                        }
+                        
+                        gameState.sounds.wrong.currentTime = 0;
+                        gameState.sounds.wrong.play().catch(e => console.log("音效播放失败:", e));
+                        
+                        const slot = gameState.wordSlots.querySelector(`[data-index="${i}"]`);
+                        // 显示错误的元音
+                        slot.textContent = vowel;
+                        slot.classList.remove('missing-letter');
+                        slot.classList.add('wrong');
+                        
+                        setTimeout(() => {
+                            // 恢复为隐藏状态
+                            slot.textContent = state.char;
+                            slot.classList.add('missing-letter');
+                            slot.classList.remove('wrong');
+                        }, 800);
+                    }
+                    break;
+                }
+            }
+        }
+
+        // 创建下落的元音字母
+        function createVowel() {
+            if (gameState.isPaused) return;
+            
+            // 元音字母列表
+            const vowels = ['A', 'E', 'I', 'O', 'U'];
+            const vowel = vowels[Math.floor(Math.random() * vowels.length)];
+            const size = Math.random() * 10 + 22; // 增大字母尺寸，确保可见
+            
+            const fallingChar = document.createElement('div');
+            fallingChar.className = 'falling-char';
+            fallingChar.textContent = vowel;
+            fallingChar.style.fontSize = `${size}px`;
+            fallingChar.style.left = `${Math.random() * 100}%`;
+            fallingChar.style.top = '-40px';
+            fallingChar.style.opacity = 0.9; // 高不透明度，确保可见
+            fallingChar.style.zIndex = 10;
+            
+            const duration = Math.random() * 5 + 3; // 延长下落时间
+            fallingChar.style.transition = `transform ${duration}s linear, top ${duration}s linear`;
+            
+            gameState.gameArea.appendChild(fallingChar);
+            
+            setTimeout(() => {
+                fallingChar.style.top = `${gameState.gameArea.offsetHeight}px`;
+                fallingChar.style.transform = `translateX(${Math.random() * 120 - 60}px)`;
+            }, 10);
+            
+            fallingChar.addEventListener('click', (e) => {
+                handleVowelClick(e, vowel, fallingChar);
+            });
+            
+            setTimeout(() => {
+                if (fallingChar.parentNode) fallingChar.remove();
+            }, duration * 1000);
+        }
+
+        // 开始生成元音字母
+        function startVowels() {
+            const existingChars = document.querySelectorAll('.falling-char');
+            existingChars.forEach(char => char.remove());
+            
+            if (gameState.vowelInterval) clearInterval(gameState.vowelInterval);
+            
+            gameState.vowelInterval = setInterval(() => {
+                if (!gameState.isPaused) createVowel();
+            }, Math.random() * 400 + 200);
+        }
+
+        // 开始计时器
+        function startTimer() {
+            if (gameState.timerInterval) clearInterval(gameState.timerInterval);
+            
+            gameState.timerInterval = setInterval(() => {
+                if (!gameState.isPaused) {
+                    gameState.remainingTime--;
+                    updateTimer();
+                    
+                    if (gameState.remainingTime <= 0) endGame();
+                }
+            }, 1000);
+        }
+
+        // 更新计时器显示
+        function updateTimer() {
+            const minutes = Math.floor(gameState.remainingTime / 60);
+            const seconds = gameState.remainingTime % 60;
+            gameState.timerDisplay.innerHTML = `<i class="fa fa-clock-o mr-0.5"></i>${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            if (gameState.remainingTime <= 10) {
+                gameState.timerDisplay.classList.add('text-red-500', 'animate-pulse');
+            } else {
+                gameState.timerDisplay.classList.remove('text-red-500', 'animate-pulse');
+            }
+        }
+
+        // 更新分数显示
+        function updateScore() {
+            gameState.scoreDisplay.innerHTML = `<i class="fa fa-star mr-0.5"></i>得分: ${gameState.score}`;
+        }
+
+        // 更新单词计数显示
+        function updateWordCount() {
+            gameState.wordCountDisplay.textContent = `单词: ${gameState.completedWords}/${gameState.totalWords}`;
+        }
+
+        // 暂停游戏
+        function pauseGame() {
+            gameState.isPaused = true;
+            elements.pauseMenu.classList.remove('hidden');
+        }
+
+        // 恢复游戏
+        function resumeGame() {
+            gameState.isPaused = false;
+            elements.pauseMenu.classList.add('hidden');
+        }
+
+        // 结束游戏
+        function endGame() {
+            if (gameState.timerInterval) clearInterval(gameState.timerInterval);
+            if (gameState.vowelInterval) clearInterval(gameState.vowelInterval);
+            
+            elements.finalScore.textContent = `最终得分: ${gameState.score}`;
+            elements.wordsCompleted.textContent = `完成单词: ${gameState.completedWords}/${gameState.totalWords}`;
+            elements.gameOver.classList.remove('hidden');
+        }
+
+        // 返回主菜单
+        function returnToMainMenu() {
+            if (gameState.timerInterval) clearInterval(gameState.timerInterval);
+            if (gameState.vowelInterval) clearInterval(gameState.vowelInterval);
+            
+            elements.modeSelection.classList.remove('hidden');
+            elements.gameContainer.classList.add('hidden');
+            elements.pauseMenu.classList.add('hidden');
+            elements.gameOver.classList.add('hidden');
+        }
+
+        // 初始化音频
+        initAudio();
+
+        // 事件监听器
+        elements.timedModeBtn.addEventListener('click', () => {
+            gameState.mode = 'timed';
+            elements.modeSelection.classList.add('hidden');
+            elements.gameContainer.classList.remove('hidden');
+            initGame();
+        });
+
+        elements.untimedModeBtn.addEventListener('click', () => {
+            gameState.mode = 'untimed';
+            elements.modeSelection.classList.add('hidden');
+            elements.gameContainer.classList.remove('hidden');
+            initGame();
+        });
+
+        elements.pauseBtn.addEventListener('click', pauseGame);
+        elements.quitBtn.addEventListener('click', returnToMainMenu);
+        elements.resumeBtn.addEventListener('click', resumeGame);
+        elements.restartBtn.addEventListener('click', () => {
+            elements.pauseMenu.classList.add('hidden');
+            initGame();
+        });
+        elements.quitToMainBtn.addEventListener('click', returnToMainMenu);
+        elements.playAgainBtn.addEventListener('click', () => {
+            elements.gameOver.classList.add('hidden');
+            initGame();
+        });
+        elements.backToMainBtn.addEventListener('click', returnToMainMenu);
+    </script>
+</body>
+</html>

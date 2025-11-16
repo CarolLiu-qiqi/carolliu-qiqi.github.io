@@ -1,0 +1,1371 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>避碰沟通游戏单元</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  
+  <!-- Tailwind 配置 -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#1A5F7A',
+            secondary: '#2C8C99',
+            accent: '#54BAB9',
+            light: '#F9F9F9',
+            dark: '#22333B'
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            display: ['"Noto Sans"', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .content-auto {
+        content-visibility: auto;
+      }
+      .ship-move {
+        animation: shipMove 20s linear infinite;
+      }
+      .rotate-slow {
+        animation: rotate 15s linear infinite;
+      }
+      .pulse-alert {
+        animation: pulseAlert 2s infinite;
+      }
+      .button-hover {
+        @apply transform transition-all duration-300 hover:-translate-y-1 hover:shadow-xl;
+      }
+      @keyframes shipMove {
+        0% { transform: translateX(-100px); }
+        100% { transform: translateX(calc(100vw + 100px)); }
+      }
+      @keyframes rotate {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      @keyframes pulseAlert {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+      }
+      .bg-radar {
+        background-image: radial-gradient(circle, rgba(84,186,185,0.2) 2px, transparent 2px),
+                         radial-gradient(circle at center, rgba(84,186,185,0.3) 1px, transparent 1px),
+                         linear-gradient(to right, transparent 49.5%, rgba(84,186,185,0.3) 49.5%, rgba(84,186,185,0.3) 50.5%, transparent 50.5%),
+                         linear-gradient(to bottom, transparent 49.5%, rgba(84,186,185,0.3) 49.5%, rgba(84,186,185,0.3) 50.5%, transparent 50.5%);
+        background-size: 40px 40px, 100% 100%, 100% 100%, 100% 100%;
+      }
+    }
+  </style>
+</head>
+
+<body class="bg-gradient-to-b from-light to-teal-50 min-h-screen font-sans text-dark">
+  <!-- 顶部导航 -->
+  <header class="bg-white/90 backdrop-blur-sm shadow-md sticky top-0 z-50">
+    <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center space-x-3">
+        <i class="fa fa-compass text-accent text-2xl rotate-slow"></i>
+        <h1 class="text-xl md:text-2xl font-bold text-primary">避碰沟通游戏单元</h1>
+      </div>
+      <div class="flex items-center space-x-4">
+        <div class="hidden md:flex items-center bg-teal-50 px-3 py-1 rounded-full text-sm">
+          <i class="fa fa-check-circle text-accent mr-1"></i>
+          <span id="progress-display">进度: 0%</span>
+        </div>
+        <button id="sound-toggle" class="p-2 rounded-full hover:bg-teal-100 transition-colors">
+          <i class="fa fa-volume-up text-primary"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主内容区 -->
+  <main class="container mx-auto px-4 py-8">
+    <!-- 欢迎界面 -->
+    <section id="welcome-screen" class="min-h-[70vh] flex flex-col items-center justify-center text-center relative pt-8 pb-20 overflow-hidden">
+      <!-- 背景装饰元素 -->
+      <div class="absolute top-0 left-0 w-full h-full bg-radar opacity-20"></div>
+      <div class="absolute top-1/4 left-10 w-20 h-20 bg-primary/5 rounded-full blur-xl hidden lg:block"></div>
+      <div class="absolute bottom-1/3 right-10 w-32 h-32 bg-accent/5 rounded-full blur-2xl hidden lg:block"></div>
+      
+      <!-- 装饰船舶动画 -->
+      <div class="absolute top-1/3 left-0 text-primary/10 ship-move">
+        <i class="fa fa-ship text-4xl"></i>
+      </div>
+      <div class="absolute bottom-1/4 right-0 text-accent/10 ship-move" style="animation-delay: 5s; animation-direction: reverse;">
+        <i class="fa fa-ship text-3xl"></i>
+      </div>
+      
+      <!-- 主图标区域 -->
+      <div class="relative mb-8 mt-4 z-10">
+        <div class="absolute -inset-4 bg-accent/20 rounded-full blur-2xl"></div>
+        <div class="relative">
+          <i class="fa fa-exclamation-triangle text-6xl text-primary/80 pulse-alert"></i>
+          <i class="fa fa-ship absolute -bottom-4 -right-4 text-4xl text-accent/70" style="animation: float 6s ease-in-out infinite;"></i>
+        </div>
+      </div>
+      
+      <!-- 标题区域 -->
+      <div class="max-w-3xl mx-auto mb-8 relative z-10">
+        <h2 class="text-[clamp(1.8rem,5vw,3rem)] font-bold mb-6 text-primary font-display leading-tight">
+          避碰沟通游戏单元
+        </h2>
+        <p class="text-gray-600 max-w-2xl mx-auto text-lg bg-white/80 backdrop-blur-sm p-5 rounded-xl shadow-md">
+          学习船舶避碰规则与通信术语，掌握海上避碰沟通技巧，提升航行安全意识
+        </p>
+      </div>
+      
+      <!-- 按钮区域 - 确保完全可见 -->
+      <div class="flex flex-col sm:flex-row gap-4 w-full max-w-md mt-4 relative z-20">
+        <button id="start-learning" class="flex-1 bg-gradient-to-r from-primary to-secondary text-white font-semibold py-4 px-6 rounded-lg shadow-lg button-hover flex items-center justify-center">
+          <i class="fa fa-book mr-2"></i> 学习避碰术语
+        </button>
+        <button id="start-game" class="flex-1 bg-gradient-to-r from-accent to-teal-400 text-white font-semibold py-4 px-6 rounded-lg shadow-lg button-hover flex items-center justify-center">
+          <i class="fa fa-gamepad mr-2"></i> 开始避碰演练
+        </button>
+      </div>
+      
+      <!-- 装饰波浪 -->
+      <div class="absolute bottom-0 left-0 right-0 h-24 overflow-hidden">
+        <svg viewBox="0 0 1200 120" preserveAspectRatio="none" class="absolute bottom-0 w-full h-full text-teal-100">
+          <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V120H0V95.8C59.71,118.11,165.07,111.28,321.39,56.44Z"></path>
+        </svg>
+      </div>
+    </section>
+
+    <!-- 学习模块 -->
+    <section id="learning-module" class="hidden">
+      <div class="flex justify-between items-center mb-6">
+        <button id="back-from-learning" class="flex items-center text-gray-600 hover:text-primary transition-colors bg-white/80 px-4 py-2 rounded-lg shadow-sm">
+          <i class="fa fa-arrow-left mr-2"></i> 返回
+        </button>
+        <div class="bg-white/80 px-4 py-2 rounded-lg shadow-sm text-sm text-gray-600">
+          <span id="current-term">1</span>/<span id="total-terms">0</span>
+        </div>
+      </div>
+      
+      <!-- 术语卡片 -->
+      <div class="relative w-full max-w-2xl mx-auto aspect-[4/3] mb-8">
+        <div class="absolute inset-0 bg-gradient-to-br from-accent/10 to-transparent rounded-3xl blur-xl"></div>
+        
+        <div id="vocab-card" class="relative w-full h-full">
+          <!-- 卡片正面 -->
+          <div class="absolute w-full h-full bg-white rounded-2xl shadow-xl p-8 flex flex-col justify-center items-center text-center border border-teal-100 overflow-hidden transition-all duration-500">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-accent"></div>
+            <div class="absolute top-4 right-4 opacity-10">
+              <i class="fa fa-ship text-3xl text-primary rotate-slow"></i>
+            </div>
+            
+            <h3 id="vocab-word" class="text-3xl md:text-4xl font-bold text-primary mb-4 font-display"></h3>
+            <div id="vocab-phonetic" class="text-gray-500 text-lg italic mb-6"></div>
+            <p class="text-gray-400 text-sm absolute bottom-4">点击卡片查看释义</p>
+          </div>
+          
+          <!-- 卡片背面 -->
+          <div class="absolute w-full h-full bg-white rounded-2xl shadow-xl p-8 flex flex-col border border-teal-100 overflow-hidden transition-all duration-500 transform rotate-y-180 opacity-0 pointer-events-none">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent to-secondary"></div>
+            <div class="absolute top-4 right-4 opacity-10">
+              <i class="fa fa-compass text-3xl text-primary rotate-slow"></i>
+            </div>
+            
+            <h3 id="vocab-word-back" class="text-2xl font-bold text-primary mb-2 font-display"></h3>
+            <div id="vocab-part" class="text-accent font-medium mb-4"></div>
+            <div id="vocab-definition" class="flex-grow text-gray-700 mb-6"></div>
+            
+            <div class="flex justify-between items-center">
+              <button id="mark-known" class="text-secondary hover:text-primary transition-colors bg-teal-50 px-3 py-1 rounded-full flex items-center">
+                <i class="fa fa-check-circle mr-1"></i> 已掌握
+              </button>
+              <button id="play-pronunciation" class="text-primary hover:text-accent transition-colors p-2 rounded-full hover:bg-teal-50">
+                <i class="fa fa-volume-up"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 导航按钮 -->
+      <div class="flex justify-between max-w-2xl mx-auto mb-12">
+        <button id="prev-vocab" class="bg-white hover:bg-teal-50 text-gray-700 font-medium py-2 px-6 rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+          <i class="fa fa-arrow-left mr-2"></i> 上一个
+        </button>
+        <button id="next-vocab" class="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-6 rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+          下一个 <i class="fa fa-arrow-right ml-2"></i>
+        </button>
+      </div>
+      
+      <!-- 已掌握术语 -->
+      <div class="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-md">
+        <h4 class="text-lg font-semibold mb-4 flex items-center text-primary">
+          <i class="fa fa-check-square-o mr-2"></i> 已掌握的避碰术语
+        </h4>
+        <div id="known-terms" class="flex flex-wrap gap-2">
+          <p class="text-gray-500 italic">尚未掌握任何术语</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 游戏模块 -->
+    <section id="game-module" class="hidden">
+      <div class="flex justify-between items-center mb-6">
+        <button id="back-from-game" class="flex items-center text-gray-600 hover:text-primary transition-colors bg-white/80 px-4 py-2 rounded-lg shadow-sm">
+          <i class="fa fa-arrow-left mr-2"></i> 返回
+        </button>
+        <div id="game-score" class="bg-accent/10 text-accent font-semibold py-1 px-3 rounded-full text-sm flex items-center">
+          <i class="fa fa-shield mr-1"></i> 安全指数: <span id="score-value">0</span>
+        </div>
+      </div>
+      
+      <!-- 游戏选择 -->
+      <div id="game-selection" class="min-h-[60vh] flex flex-col items-center justify-center">
+        <h2 class="text-2xl font-bold mb-8 text-center text-primary font-display">选择演练模式</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
+          <!-- 术语配对 -->
+          <div class="game-card bg-white rounded-xl shadow-lg p-6 text-center hover:shadow-xl transition-all transform hover:-translate-y-1 cursor-pointer border border-transparent hover:border-primary group">
+            <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-primary/20 transition-colors">
+              <i class="fa fa-exchange text-2xl text-primary"></i>
+            </div>
+            <h3 class="font-bold text-lg mb-2 font-display">避碰术语配对</h3>
+            <p class="text-gray-600 text-sm">将避碰术语与正确释义配对</p>
+            <button data-game="matching" class="mt-4 text-primary font-medium hover:underline">开始游戏</button>
+          </div>
+          
+          <!-- 情境判断 -->
+          <div class="game-card bg-white rounded-xl shadow-lg p-6 text-center hover:shadow-xl transition-all transform hover:-translate-y-1 cursor-pointer border border-transparent hover:border-secondary group">
+            <div class="w-16 h-16 bg-secondary/10 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-secondary/20 transition-colors">
+              <i class="fa fa-eye text-2xl text-secondary"></i>
+            </div>
+            <h3 class="font-bold text-lg mb-2 font-display">避碰情境判断</h3>
+            <p class="text-gray-600 text-sm">判断船舶相遇情境并选择正确行动</p>
+            <button data-game="situation" class="mt-4 text-secondary font-medium hover:underline">开始游戏</button>
+          </div>
+          
+          <!-- 通信对话 -->
+          <div class="game-card bg-white rounded-xl shadow-lg p-6 text-center hover:shadow-xl transition-all transform hover:-translate-y-1 cursor-pointer border border-transparent hover:border-accent group">
+            <div class="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-accent/20 transition-colors">
+              <i class="fa fa-comments text-2xl text-accent"></i>
+            </div>
+            <h3 class="font-bold text-lg mb-2 font-display">避碰通信对话</h3>
+            <p class="text-gray-600 text-sm">完成避碰场景中的VHF通信对话</p>
+            <button data-game="dialog" class="mt-4 text-accent font-medium hover:underline">开始游戏</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 配对游戏 -->
+      <div id="matching-game" class="hidden">
+        <h3 class="text-xl font-bold mb-6 text-center text-primary font-display">避碰术语配对</h3>
+        <p class="text-gray-600 text-center mb-6 bg-white/80 backdrop-blur-sm p-3 rounded-lg inline-block">
+          找出避碰术语与对应释义的正确配对，限时60秒
+        </p>
+        
+        <div class="text-center mb-6">
+          <div class="inline-flex items-center bg-white/80 px-4 py-2 rounded-full shadow-sm text-primary">
+            <i class="fa fa-clock-o mr-2"></i>
+            <span>剩余时间: </span>
+            <span id="matching-timer" class="ml-2 font-semibold">60</span>
+            <span class="ml-1">秒</span>
+          </div>
+        </div>
+        
+        <div id="matching-board" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 max-w-4xl mx-auto">
+          <!-- 动态生成卡片 -->
+        </div>
+        
+        <div class="text-center">
+          <button id="restart-matching" class="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-6 rounded-lg transition-colors shadow-sm">
+            <i class="fa fa-refresh mr-2"></i> 重新开始
+          </button>
+        </div>
+      </div>
+      
+      <!-- 情境判断游戏 -->
+      <div id="situation-game" class="hidden">
+        <h3 class="text-xl font-bold mb-6 text-center text-primary font-display">避碰情境判断</h3>
+        <p class="text-gray-600 text-center mb-6">根据船舶相遇情境，选择正确的避碰行动</p>
+        
+        <div class="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-6 mb-6 border border-teal-100">
+          <!-- 船舶情境图 -->
+          <div id="situation-visual" class="relative h-48 md:h-64 bg-teal-50 rounded-lg mb-6 overflow-hidden bg-radar">
+            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-primary">
+              <i class="fa fa-ship text-4xl"></i>
+              <span class="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs font-medium">本船</span>
+            </div>
+            <div id="other-ship" class="absolute text-secondary pulse-alert">
+              <i class="fa fa-ship text-3xl"></i>
+              <span class="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs font-medium">来船</span>
+            </div>
+          </div>
+          
+          <div id="situation-description" class="mb-6 text-gray-700 p-4 bg-teal-50 rounded-lg">
+            <!-- 动态生成情境描述 -->
+          </div>
+          
+          <div id="situation-options" class="space-y-3">
+            <!-- 动态生成选项 -->
+          </div>
+        </div>
+        
+        <div class="text-center">
+          <button id="next-situation" class="bg-secondary hover:bg-secondary/90 text-white font-medium py-2 px-6 rounded-lg transition-colors shadow-sm hidden">
+            下一题
+          </button>
+          <button id="restart-situation" class="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-6 rounded-lg transition-colors shadow-sm mt-4">
+            <i class="fa fa-refresh mr-2"></i> 重新开始
+          </button>
+        </div>
+      </div>
+      
+      <!-- 对话游戏 -->
+      <div id="dialog-game" class="hidden">
+        <h3 class="text-xl font-bold mb-6 text-center text-primary font-display">避碰通信对话</h3>
+        <p class="text-gray-600 text-center mb-6">在避碰场景中完成正确的VHF通信对话</p>
+        
+        <div class="max-w-2xl mx-auto bg-white rounded-xl shadow-lg p-6 mb-6 border border-teal-100">
+          <div class="flex items-center mb-4 text-teal-500">
+            <i class="fa fa-walkie-talkie mr-2"></i>
+            <span class="text-sm font-medium">VHF避碰通信</span>
+          </div>
+          
+          <div id="dialog-content" class="mb-6 text-gray-700 space-y-4">
+            <!-- 动态生成对话 -->
+          </div>
+          
+          <div id="dialog-options" class="space-y-3">
+            <!-- 动态生成选项 -->
+          </div>
+        </div>
+        
+        <div class="text-center">
+          <button id="next-dialog" class="bg-accent hover:bg-accent/90 text-white font-medium py-2 px-6 rounded-lg transition-colors shadow-sm hidden">
+            下一题
+          </button>
+          <button id="restart-dialog" class="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-6 rounded-lg transition-colors shadow-sm mt-4">
+            <i class="fa fa-refresh mr-2"></i> 重新开始
+          </button>
+        </div>
+      </div>
+    </section>
+    
+    <!-- 游戏结果弹窗 -->
+    <div id="result-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+      <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 text-center transform transition-all">
+        <div class="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center" id="result-icon-container">
+          <i class="fa fa-trophy text-2xl text-yellow-500"></i>
+        </div>
+        <h3 class="text-2xl font-bold mb-2 text-primary font-display" id="result-title"></h3>
+        <p class="text-gray-600 mb-6" id="result-message"></p>
+        <div class="flex justify-center gap-4">
+          <button id="play-again" class="bg-primary hover:bg-primary/90 text-white font-semibold py-2 px-6 rounded-lg transition-colors">
+            再玩一次
+          </button>
+          <button id="back-to-games" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 px-6 rounded-lg transition-colors">
+            返回选择
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 页脚 -->
+  <footer class="bg-white/90 backdrop-blur-sm py-6 mt-12 border-t border-teal-100">
+    <div class="container mx-auto px-4 text-center text-gray-500 text-sm">
+      <div class="flex justify-center space-x-4 mb-2">
+        <i class="fa fa-ship text-accent/50"></i>
+        <i class="fa fa-compass text-accent/50"></i>
+        <i class="fa fa-exclamation-triangle text-accent/50"></i>
+      </div>
+      <p>避碰沟通游戏单元 &copy; 2023 - 提升您的船舶避碰通信能力</p>
+    </div>
+  </footer>
+
+  <script>
+    // 避碰术语数据
+    const collisionTerms = [
+      {
+        word: "collision",
+        phonetic: "/kəˈlɪʒn/",
+        part: "n.",
+        definition: "碰撞，相撞"
+      },
+      {
+        word: "stand-on",
+        phonetic: "/ˈstænd ɒn/",
+        part: "adj.",
+        definition: "直航的，保持航向航速的"
+      },
+      {
+        word: "give-way",
+        phonetic: "/ˈɡɪv weɪ/",
+        part: "adj.",
+        definition: "让路的，应避让的"
+      },
+      {
+        word: "alter course",
+        phonetic: "/ˈɔːltə kɔːs/",
+        part: "v.",
+        definition: "改变航向"
+      },
+      {
+        word: "reduce speed",
+        phonetic: "/rɪˈdjuːs spiːd/",
+        part: "v.",
+        definition: "减速"
+      },
+      {
+        word: "stop engine",
+        phonetic: "/stɒp ˈendʒɪn/",
+        part: "v.",
+        definition: "停车"
+      },
+      {
+        word: "astern",
+        phonetic: "/əˈstɜːn/",
+        part: "adv.",
+        definition: "向后，在船尾"
+      },
+      {
+        word: "port side",
+        phonetic: "/pɔːt saɪd/",
+        part: "n.",
+        definition: "左舷"
+      },
+      {
+        word: "starboard side",
+        phonetic: "/ˈstɑːbəd saɪd/",
+        part: "n.",
+        definition: "右舷"
+      },
+      {
+        word: "head-on",
+        phonetic: "/ˌhed ˈɒn/",
+        part: "adj.",
+        definition: "对遇的，迎面的"
+      },
+      {
+        word: "overtake",
+        phonetic: "/ˌəʊvəˈteɪk/",
+        part: "v.",
+        definition: "追越，超越"
+      },
+      {
+        word: "crossing",
+        phonetic: "/ˈkrɒsɪŋ/",
+        part: "n.",
+        definition: "交叉相遇"
+      },
+      {
+        word: "visibility",
+        phonetic: "/ˌvɪzəˈbɪləti/",
+        part: "n.",
+        definition: "能见度"
+      },
+      {
+        word: "fog signal",
+        phonetic: "/fɒɡ ˈsɪɡnəl/",
+        part: "n.",
+        definition: "雾号"
+      },
+      {
+        word: "maneuver",
+        phonetic: "/məˈnuːvə/",
+        part: "n.",
+        definition: "操纵，机动"
+      },
+      {
+        word: "danger",
+        phonetic: "/ˈdeɪndʒə/",
+        part: "n.",
+        definition: "危险"
+      },
+      {
+        word: "clear",
+        phonetic: "/klɪə/",
+        part: "adj.",
+        definition: "安全的，无碰撞危险的"
+      },
+      {
+        word: "bearing",
+        phonetic: "/ˈbeərɪŋ/",
+        part: "n.",
+        definition: "方位，航向"
+      },
+      {
+        word: "approach",
+        phonetic: "/əˈprəʊtʃ/",
+        part: "v.",
+        definition: "接近，驶近"
+      },
+      {
+        word: "navigate",
+        phonetic: "/ˈnævɪɡeɪt/",
+        part: "v.",
+        definition: "航行，驾驶"
+      }
+    ];
+    
+    // 避碰情境数据
+    const collisionSituations = [
+      {
+        description: "两船航向相反，正朝对方驶去，形成对遇局面。",
+        otherShipPosition: "top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-full",
+        correctAction: "alter course to starboard",
+        options: [
+          "向右转向（右舷对右舷通过）",
+          "向左转向",
+          "保持航向和航速",
+          "立即停车"
+        ],
+        explanation: "在对遇局面中，两船应各自向右转向，以右舷对右舷的方式安全通过。"
+      },
+      {
+        description: "你船正从后方接近另一艘船，形成追越局面。",
+        otherShipPosition: "top-1/2 left-1/2 transform -translate-x-1/4 -translate-y-1/2",
+        correctAction: "keep clear",
+        options: [
+          "保持安全距离，从右侧追越",
+          "鸣放五短声警告",
+          "要求被追越船改变航向",
+          "加速尽快追越"
+        ],
+        explanation: "追越船应承担避让责任，保持安全距离，避免妨碍被追越船的航行。"
+      },
+      {
+        description: "你船与另一艘船航向交叉，来船位于你船右舷。",
+        otherShipPosition: "top-1/2 left-full transform -translate-x-full -translate-y-1/4",
+        correctAction: "give way",
+        options: [
+          "主动减速或转向避让",
+          "保持航向和航速",
+          "鸣放三短声要求来船避让",
+          "立即停车并鸣放五短声"
+        ],
+        explanation: "当两船交叉相遇时，右舷来船为直航船，左舷来船为让路船，应主动避让。"
+      },
+      {
+        description: "能见度不良，你船听到前方有雾号，但尚未发现来船。",
+        otherShipPosition: "top-1/4 left-1/2 transform -translate-x-1/2",
+        correctAction: "reduce speed",
+        options: [
+          "减速航行，鸣放雾号，谨慎驾驶",
+          "保持原航向航速，密切观察",
+          "鸣放五短声警告来船",
+          "立即转向右舷"
+        ],
+        explanation: "能见度不良时，船舶应减速航行，按规定鸣放雾号，保持警惕，必要时停车。"
+      }
+    ];
+    
+    // 避碰对话数据
+    const collisionDialogs = [
+      {
+        dialog: [
+          "Vessel Alpha, this is Vessel Bravo. You are on a collision [BLANK]. I am altering course to starboard.",
+          "Vessel Bravo, this is Alpha. Roger, I will also alter course to [BLANK] to keep clear."
+        ],
+        blankWords: ["course", "starboard"],
+        options: [
+          ["course", "route", "path", "direction"],
+          ["starboard", "port", "left", "astern"]
+        ]
+      },
+      {
+        dialog: [
+          "Vessel Blue Sea, this is Cargo Ship Pacific. I am [BLANK] you from astern. Intend to overtake on your starboard side.",
+          "Cargo Ship Pacific, this is Blue Sea. Roger, you may [BLANK] on my starboard side. I will maintain course and speed."
+        ],
+        blankWords: ["overtaking", "overtake"],
+        options: [
+          ["overtaking", "approaching", "following", "meeting"],
+          ["overtake", "pass", "follow", "approach"]
+        ]
+      },
+      {
+        dialog: [
+          "Fishing Boat 321, this is Ferry Express. We are in a [BLANK] situation. What are your intentions?",
+          "Ferry Express, this is Fishing Boat 321. I will [BLANK] speed and alter course to port."
+        ],
+        blankWords: ["crossing", "reduce"],
+        options: [
+          ["crossing", "head-on", "overtaking", "collision"],
+          ["reduce", "increase", "maintain", "stop"]
+        ]
+      }
+    ];
+
+    // 全局状态管理
+    const state = {
+      currentTermIndex: 0,
+      knownTerms: [],
+      score: 0,
+      currentGame: null,
+      currentGameIndex: 0,
+      gameTimer: null,
+      matchingState: {
+        flippedCards: [],
+        matchedPairs: 0,
+        totalPairs: 0
+      },
+      soundEnabled: true
+    };
+
+    // 页面加载完成后初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      // 初始化术语总数显示
+      document.getElementById('total-terms').textContent = collisionTerms.length;
+      
+      // 显示第一个术语
+      displayTerm(0);
+      
+      // 绑定事件监听器
+      bindEventListeners();
+    });
+
+    // 绑定所有事件监听器
+    function bindEventListeners() {
+      // 欢迎界面按钮
+      document.getElementById('start-learning').addEventListener('click', function() {
+        document.getElementById('welcome-screen').classList.add('hidden');
+        document.getElementById('learning-module').classList.remove('hidden');
+      });
+      
+      document.getElementById('start-game').addEventListener('click', function() {
+        document.getElementById('welcome-screen').classList.add('hidden');
+        document.getElementById('game-module').classList.remove('hidden');
+        resetScore();
+      });
+      
+      // 返回按钮
+      document.getElementById('back-from-learning').addEventListener('click', function() {
+        document.getElementById('learning-module').classList.add('hidden');
+        document.getElementById('welcome-screen').classList.remove('hidden');
+      });
+      
+      document.getElementById('back-from-game').addEventListener('click', function() {
+        document.getElementById('game-module').classList.add('hidden');
+        document.getElementById('welcome-screen').classList.remove('hidden');
+        stopTimer();
+      });
+      
+      // 词汇卡片翻转
+      const vocabCard = document.getElementById('vocab-card');
+      vocabCard.addEventListener('click', function() {
+        const front = this.querySelector('.absolute:not(.rotate-y-180)');
+        const back = this.querySelector('.rotate-y-180');
+        
+        front.classList.add('rotate-y-180', 'opacity-0', 'pointer-events-none');
+        front.classList.remove('opacity-100');
+        
+        back.classList.remove('rotate-y-180', 'opacity-0', 'pointer-events-none');
+        back.classList.add('opacity-100');
+      });
+      
+      // 学习模块导航
+      document.getElementById('prev-vocab').addEventListener('click', function() {
+        if (state.currentTermIndex > 0) {
+          state.currentTermIndex--;
+          displayTerm(state.currentTermIndex);
+          resetCardRotation();
+        }
+      });
+      
+      document.getElementById('next-vocab').addEventListener('click', function() {
+        if (state.currentTermIndex < collisionTerms.length - 1) {
+          state.currentTermIndex++;
+          displayTerm(state.currentTermIndex);
+          resetCardRotation();
+        }
+      });
+      
+      // 标记已掌握
+      document.getElementById('mark-known').addEventListener('click', function() {
+        const term = collisionTerms[state.currentTermIndex];
+        const index = state.knownTerms.indexOf(term.word);
+        
+        if (index === -1) {
+          state.knownTerms.push(term.word);
+          playSound('success');
+        } else {
+          state.knownTerms.splice(index, 1);
+          playSound('remove');
+        }
+        
+        updateKnownTermsDisplay();
+        updateProgress();
+        updateMarkButton();
+      });
+      
+      // 发音按钮
+      document.getElementById('play-pronunciation').addEventListener('click', function() {
+        const term = collisionTerms[state.currentTermIndex];
+        playPronunciation(term.word);
+      });
+      
+      // 游戏选择
+      document.querySelectorAll('[data-game]').forEach(button => {
+        button.addEventListener('click', function() {
+          const gameType = this.getAttribute('data-game');
+          startGame(gameType);
+          playSound('select');
+        });
+      });
+      
+      // 配对游戏
+      document.getElementById('restart-matching').addEventListener('click', function() {
+        startMatchingGame();
+        playSound('restart');
+      });
+      
+      // 情境判断游戏
+      document.getElementById('next-situation').addEventListener('click', function() {
+        state.currentGameIndex++;
+        if (state.currentGameIndex < collisionSituations.length) {
+          setupSituationQuestion();
+        } else {
+          showResult(
+            '恭喜完成！', 
+            `你成功完成了所有避碰情境判断，安全指数: ${state.score}`,
+            'success'
+          );
+        }
+        playSound('next');
+      });
+      
+      document.getElementById('restart-situation').addEventListener('click', function() {
+        startSituationGame();
+        playSound('restart');
+      });
+      
+      // 对话游戏
+      document.getElementById('next-dialog').addEventListener('click', function() {
+        state.currentGameIndex++;
+        if (state.currentGameIndex < collisionDialogs.length) {
+          setupDialogQuestion();
+        } else {
+          showResult(
+            '恭喜完成！', 
+            `你成功完成了所有避碰通信对话，安全指数: ${state.score}`,
+            'success'
+          );
+        }
+        playSound('next');
+      });
+      
+      document.getElementById('restart-dialog').addEventListener('click', function() {
+        startDialogGame();
+        playSound('restart');
+      });
+      
+      // 结果弹窗按钮
+      document.getElementById('play-again').addEventListener('click', function() {
+        document.getElementById('result-modal').classList.add('hidden');
+        if (state.currentGame) {
+          startGame(state.currentGame);
+        }
+        playSound('select');
+      });
+      
+      document.getElementById('back-to-games').addEventListener('click', function() {
+        document.getElementById('result-modal').classList.add('hidden');
+        document.getElementById('matching-game').classList.add('hidden');
+        document.getElementById('situation-game').classList.add('hidden');
+        document.getElementById('dialog-game').classList.add('hidden');
+        document.getElementById('game-selection').classList.remove('hidden');
+        playSound('back');
+      });
+      
+      // 声音开关
+      document.getElementById('sound-toggle').addEventListener('click', function() {
+        state.soundEnabled = !state.soundEnabled;
+        const icon = this.querySelector('i');
+        
+        if (state.soundEnabled) {
+          icon.classList.remove('fa-volume-off');
+          icon.classList.add('fa-volume-up');
+          playSound('toggle');
+        } else {
+          icon.classList.remove('fa-volume-up');
+          icon.classList.add('fa-volume-off');
+        }
+      });
+    }
+
+    // 显示术语卡片
+    function displayTerm(index) {
+      const term = collisionTerms[index];
+      
+      document.getElementById('vocab-word').textContent = term.word;
+      document.getElementById('vocab-phonetic').textContent = term.phonetic;
+      document.getElementById('vocab-word-back').textContent = term.word;
+      document.getElementById('vocab-part').textContent = term.part;
+      document.getElementById('vocab-definition').textContent = term.definition;
+      document.getElementById('current-term').textContent = index + 1;
+      
+      // 更新导航按钮状态
+      document.getElementById('prev-vocab').disabled = index === 0;
+      document.getElementById('next-vocab').disabled = index === collisionTerms.length - 1;
+      
+      // 更新标记按钮状态
+      updateMarkButton();
+    }
+
+    // 重置卡片旋转状态
+    function resetCardRotation() {
+      const front = document.querySelector('.absolute:not(.rotate-y-180)');
+      const back = document.querySelector('.rotate-y-180');
+      
+      if (front) {
+        front.classList.remove('rotate-y-180', 'opacity-0', 'pointer-events-none');
+        front.classList.add('opacity-100');
+      }
+      
+      if (back) {
+        back.classList.add('rotate-y-180', 'opacity-0', 'pointer-events-none');
+        back.classList.remove('opacity-100');
+      }
+    }
+
+    // 更新标记按钮状态
+    function updateMarkButton() {
+      const term = collisionTerms[state.currentTermIndex];
+      const markButton = document.getElementById('mark-known');
+      
+      if (state.knownTerms.includes(term.word)) {
+        markButton.innerHTML = '<i class="fa fa-check-circle mr-1"></i> 取消掌握';
+        markButton.classList.remove('text-secondary');
+        markButton.classList.add('text-gray-500');
+      } else {
+        markButton.innerHTML = '<i class="fa fa-check-circle mr-1"></i> 已掌握';
+        markButton.classList.remove('text-gray-500');
+        markButton.classList.add('text-secondary');
+      }
+    }
+
+    // 更新已掌握术语显示
+    function updateKnownTermsDisplay() {
+      const container = document.getElementById('known-terms');
+      
+      if (state.knownTerms.length === 0) {
+        container.innerHTML = '<p class="text-gray-500 italic">尚未掌握任何术语</p>';
+        return;
+      }
+      
+      container.innerHTML = '';
+      state.knownTerms.forEach(term => {
+        const badge = document.createElement('span');
+        badge.className = 'bg-teal-50 text-primary text-xs px-2 py-1 rounded-full flex items-center hover:bg-teal-100 transition-colors cursor-pointer';
+        badge.innerHTML = `${term} <i class="fa fa-times-circle ml-1"></i>`;
+        
+        badge.addEventListener('click', function() {
+          state.knownTerms = state.knownTerms.filter(t => t !== term);
+          updateKnownTermsDisplay();
+          updateProgress();
+          updateMarkButton();
+          playSound('remove');
+        });
+        
+        container.appendChild(badge);
+      });
+    }
+
+    // 更新学习进度
+    function updateProgress() {
+      const percentage = Math.round((state.knownTerms.length / collisionTerms.length) * 100);
+      document.getElementById('progress-display').textContent = `进度: ${percentage}%`;
+    }
+
+    // 播放单词发音
+    function playPronunciation(word) {
+      if (!state.soundEnabled) return;
+      
+      const utterance = new SpeechSynthesisUtterance(word);
+      utterance.lang = 'en-US';
+      speechSynthesis.speak(utterance);
+    }
+
+    // 播放音效（模拟）
+    function playSound(type) {
+      if (!state.soundEnabled) return;
+      // 实际项目中可替换为真实音效
+      console.log(`播放${type}音效`);
+    }
+
+    // 开始游戏
+    function startGame(gameType) {
+      state.currentGame = gameType;
+      state.currentGameIndex = 0;
+      resetScore();
+      
+      // 隐藏所有游戏，显示选中的游戏
+      document.getElementById('game-selection').classList.add('hidden');
+      document.getElementById('matching-game').classList.add('hidden');
+      document.getElementById('situation-game').classList.add('hidden');
+      document.getElementById('dialog-game').classList.add('hidden');
+      
+      if (gameType === 'matching') {
+        document.getElementById('matching-game').classList.remove('hidden');
+        startMatchingGame();
+      } else if (gameType === 'situation') {
+        document.getElementById('situation-game').classList.remove('hidden');
+        startSituationGame();
+      } else if (gameType === 'dialog') {
+        document.getElementById('dialog-game').classList.remove('hidden');
+        startDialogGame();
+      }
+    }
+
+    // 重置分数
+    function resetScore() {
+      state.score = 0;
+      document.getElementById('score-value').textContent = state.score;
+    }
+
+    // 增加分数
+    function addScore(points) {
+      state.score += points;
+      document.getElementById('score-value').textContent = state.score;
+      
+      // 分数变化动画
+      const scoreElement = document.getElementById('score-value');
+      scoreElement.classList.add('scale-125', 'text-accent');
+      setTimeout(() => {
+        scoreElement.classList.remove('scale-125', 'text-accent');
+      }, 300);
+    }
+
+    // 开始配对游戏
+    function startMatchingGame() {
+      state.matchingState = {
+        flippedCards: [],
+        matchedPairs: 0,
+        totalPairs: 0
+      };
+      
+      // 选择8个术语进行配对
+      const shuffledTerms = [...collisionTerms].sort(() => Math.random() - 0.5).slice(0, 8);
+      state.matchingState.totalPairs = shuffledTerms.length;
+      
+      // 创建卡片数据
+      const cards = [];
+      shuffledTerms.forEach(term => {
+        cards.push({
+          type: 'term',
+          content: term.word,
+          pairId: term.word
+        });
+        cards.push({
+          type: 'definition',
+          content: term.definition,
+          pairId: term.word
+        });
+      });
+      
+      // 打乱卡片顺序
+      const shuffledCards = cards.sort(() => Math.random() - 0.5);
+      
+      // 生成卡片HTML
+      const board = document.getElementById('matching-board');
+      board.innerHTML = '';
+      
+      shuffledCards.forEach((card, index) => {
+        const cardElement = document.createElement('div');
+        cardElement.className = 'matching-card relative aspect-square cursor-pointer';
+        cardElement.dataset.id = index;
+        cardElement.dataset.pairId = card.pairId;
+        cardElement.dataset.type = card.type;
+        
+        cardElement.innerHTML = `
+          <div class="absolute inset-0 rounded-xl shadow-md transition-all duration-300">
+            <!-- 卡片正面 -->
+            <div class="absolute inset-0 bg-gradient-to-br from-primary/5 to-teal-50 rounded-xl flex items-center justify-center border border-teal-100">
+              <i class="fa fa-compass text-primary/30 text-2xl rotate-slow"></i>
+            </div>
+            <!-- 卡片背面 -->
+            <div class="absolute inset-0 bg-white rounded-xl flex items-center justify-center p-3 text-center transform rotate-y-180 ${card.type === 'term' ? 'text-primary font-semibold' : 'text-gray-700 text-sm'} border border-teal-100">
+              ${card.content}
+            </div>
+          </div>
+        `;
+        
+        // 添加点击事件
+        cardElement.addEventListener('click', function() {
+          flipMatchingCard(this);
+        });
+        
+        board.appendChild(cardElement);
+      });
+      
+      // 开始计时器
+      startTimer(60, 'matching-timer', function() {
+        // 时间到结束游戏
+        showResult(
+          '时间到！', 
+          `游戏结束，你成功配对了 ${state.matchingState.matchedPairs} 组术语，安全指数: ${state.score}`,
+          'info'
+        );
+      });
+    }
+
+    // 翻转配对卡片
+    function flipMatchingCard(cardElement) {
+      // 检查是否可以翻转
+      if (state.matchingState.flippedCards.length >= 2 || 
+          cardElement.classList.contains('flipped') || 
+          cardElement.classList.contains('matched')) {
+        return;
+      }
+      
+      // 翻转卡片
+      cardElement.classList.add('flipped');
+      const innerCard = cardElement.querySelector('div');
+      innerCard.classList.add('rotate-y-180');
+      playSound('flip');
+      
+      // 记录翻转的卡片
+      state.matchingState.flippedCards.push(cardElement);
+      
+      // 如果翻转了两张卡片，检查是否匹配
+      if (state.matchingState.flippedCards.length === 2) {
+        setTimeout(checkMatchingPair, 600);
+      }
+    }
+
+    // 检查配对是否成功
+    function checkMatchingPair() {
+      const [card1, card2] = state.matchingState.flippedCards;
+      
+      if (card1.dataset.pairId === card2.dataset.pairId && 
+          card1.dataset.type !== card2.dataset.type) {
+        // 匹配成功
+        card1.classList.add('matched', 'opacity-70');
+        card2.classList.add('matched', 'opacity-70');
+        card1.querySelector('.rotate-y-180').classList.add('bg-green-50', 'border-green-200');
+        card2.querySelector('.rotate-y-180').classList.add('bg-green-50', 'border-green-200');
+        
+        // 匹配成功动画
+        [card1, card2].forEach(card => {
+          card.classList.add('scale-110');
+          setTimeout(() => card.classList.remove('scale-110'), 300);
+        });
+        
+        state.matchingState.matchedPairs++;
+        addScore(10);
+        playSound('success');
+        
+        // 检查游戏是否结束
+        if (state.matchingState.matchedPairs === state.matchingState.totalPairs) {
+          stopTimer();
+          setTimeout(() => {
+            showResult(
+              '恭喜你！', 
+              `你成功完成了所有术语配对，安全指数: ${state.score}`,
+              'success'
+            );
+          }, 500);
+        }
+      } else {
+        // 匹配失败，翻回
+        setTimeout(() => {
+          [card1, card2].forEach(card => {
+            card.classList.remove('flipped');
+            card.querySelector('div').classList.remove('rotate-y-180');
+          });
+          playSound('error');
+        }, 800);
+      }
+      
+      // 清空已翻转卡片列表
+      state.matchingState.flippedCards = [];
+    }
+
+    // 开始情境判断游戏
+    function startSituationGame() {
+      resetScore();
+      state.currentGameIndex = 0;
+      setupSituationQuestion();
+    }
+
+    // 设置情境问题
+    function setupSituationQuestion() {
+      const situation = collisionSituations[state.currentGameIndex];
+      
+      // 设置来船位置
+      const otherShip = document.getElementById('other-ship');
+      otherShip.className = 'absolute text-secondary pulse-alert';
+      otherShip.style = situation.otherShipPosition;
+      
+      // 设置情境描述
+      document.getElementById('situation-description').textContent = situation.description;
+      
+      // 生成选项
+      const optionsContainer = document.getElementById('situation-options');
+      optionsContainer.innerHTML = '';
+      
+      situation.options.forEach((option, index) => {
+        const optionElement = document.createElement('div');
+        optionElement.className = 'p-3 border border-gray-200 rounded-lg hover:bg-teal-50 cursor-pointer transition-colors';
+        optionElement.innerHTML = `<span class="font-medium mr-2">${String.fromCharCode(65 + index)}</span>${option}`;
+        
+        // 记录正确选项索引
+        const isCorrect = index === 0; // 第一个选项是正确答案
+        
+        optionElement.addEventListener('click', function() {
+          checkSituationAnswer(isCorrect, this, situation.explanation);
+        });
+        
+        optionsContainer.appendChild(optionElement);
+      });
+      
+      // 重置按钮状态
+      document.getElementById('next-situation').classList.add('hidden');
+    }
+
+    // 检查情境答案
+    function checkSituationAnswer(isCorrect, selectedElement, explanation) {
+      // 禁用所有选项
+      document.querySelectorAll('#situation-options > div').forEach(option => {
+        option.classList.remove('hover:bg-teal-50', 'cursor-pointer');
+        option.style.pointerEvents = 'none';
+      });
+      
+      // 添加解释
+      const explanationElement = document.createElement('div');
+      explanationElement.className = 'mt-4 p-3 bg-teal-50 rounded-lg text-sm text-gray-700';
+      explanationElement.textContent = `解释: ${explanation}`;
+      document.getElementById('situation-options').appendChild(explanationElement);
+      
+      if (isCorrect) {
+        // 正确答案
+        selectedElement.classList.add('bg-green-50', 'border-green-200');
+        addScore(25);
+        playSound('success');
+      } else {
+        // 错误答案
+        selectedElement.classList.add('bg-red-50', 'border-red-200');
+        
+        // 显示正确答案
+        document.querySelectorAll('#situation-options > div')[0].classList.add('bg-green-50', 'border-green-200');
+        
+        playSound('error');
+      }
+      
+      // 显示下一题按钮
+      document.getElementById('next-situation').classList.remove('hidden');
+    }
+
+    // 开始对话游戏
+    function startDialogGame() {
+      resetScore();
+      state.currentGameIndex = 0;
+      setupDialogQuestion();
+    }
+
+    // 设置对话问题
+    function setupDialogQuestion() {
+      const dialog = collisionDialogs[state.currentGameIndex];
+      state.currentBlankIndex = 0; // 从第一个空白开始
+      
+      // 显示对话
+      const dialogContainer = document.getElementById('dialog-content');
+      dialogContainer.innerHTML = '';
+      
+      dialog.dialog.forEach((line, lineIndex) => {
+        const lineElement = document.createElement('div');
+        
+        // 检查是否是当前需要填写的空白行
+        if (lineIndex === state.currentBlankIndex && line.includes('[BLANK]')) {
+          lineElement.className = 'p-3 bg-teal-50 rounded-lg border border-accent/30';
+          lineElement.innerHTML = line.replace('[BLANK]', '<span class="bg-white px-2 py-0.5 rounded border border-dashed border-accent text-accent font-medium">_____</span>');
+        } else {
+          lineElement.className = 'p-3 bg-teal-50 rounded-lg';
+          lineElement.innerHTML = line.replace('[BLANK]', '<span class="opacity-50">_____</span>');
+        }
+        
+        dialogContainer.appendChild(lineElement);
+      });
+      
+      // 显示选项
+      const optionsContainer = document.getElementById('dialog-options');
+      optionsContainer.innerHTML = '';
+      
+      // 获取当前空白对应的选项
+      const currentOptions = dialog.options[state.currentBlankIndex];
+      
+      currentOptions.forEach((option, index) => {
+        const optionElement = document.createElement('div');
+        optionElement.className = 'p-3 border border-gray-200 rounded-lg hover:bg-teal-50 cursor-pointer transition-colors';
+        optionElement.innerHTML = `<span class="font-medium mr-2">${String.fromCharCode(65 + index)}</span>${option}`;
+        
+        // 检查是否为正确答案
+        const isCorrect = option === dialog.blankWords[state.currentBlankIndex];
+        
+        optionElement.addEventListener('click', function() {
+          checkDialogAnswer(isCorrect, this, dialog, lineIndex);
+        });
+        
+        optionsContainer.appendChild(optionElement);
+      });
+      
+      // 重置按钮状态
+      document.getElementById('next-dialog').classList.add('hidden');
+    }
+
+    // 检查对话答案
+    function checkDialogAnswer(isCorrect, selectedElement, dialog, lineIndex) {
+      // 禁用所有选项
+      document.querySelectorAll('#dialog-options > div').forEach(option => {
+        option.classList.remove('hover:bg-teal-50', 'cursor-pointer');
+        option.style.pointerEvents = 'none';
+      });
+      
+      if (isCorrect) {
+        // 正确答案
+        selectedElement.classList.add('bg-green-50', 'border-green-200');
+        addScore(15);
+        playSound('success');
+        
+        // 检查是否有下一个空白
+        if (state.currentBlankIndex < dialog.blankWords.length - 1) {
+          state.currentBlankIndex++;
+          // 更新对话显示
+          updateDialogDisplay(dialog);
+        } else {
+          // 显示下一题按钮
+          document.getElementById('next-dialog').classList.remove('hidden');
+        }
+      } else {
+        // 错误答案
+        selectedElement.classList.add('bg-red-50', 'border-red-200');
+        
+        // 显示正确答案
+        document.querySelectorAll('#dialog-options > div').forEach(option => {
+          if (option.textContent.includes(dialog.blankWords[state.currentBlankIndex])) {
+            option.classList.add('bg-green-50', 'border-green-200');
+          }
+        });
+        
+        playSound('error');
+        // 显示下一题按钮
+        document.getElementById('next-dialog').classList.remove('hidden');
+      }
+    }
+
+    // 更新对话显示
+    function updateDialogDisplay(dialog) {
+      const dialogContainer = document.getElementById('dialog-content');
+      dialogContainer.innerHTML = '';
+      
+      dialog.dialog.forEach((line, lineIndex) => {
+        const lineElement = document.createElement('div');
+        
+        // 已填写的空白
+        if (lineIndex < state.currentBlankIndex && line.includes('[BLANK]')) {
+          lineElement.className = 'p-3 bg-teal-50 rounded-lg';
+          lineElement.innerHTML = line.replace('[BLANK]', `<span class="bg-green-50 px-2 py-0.5 rounded text-green-700 font-medium">${dialog.blankWords[lineIndex]}</span>`);
+        }
+        // 当前需要填写的空白
+        else if (lineIndex === state.currentBlankIndex && line.includes('[BLANK]')) {
+          lineElement.className = 'p-3 bg-teal-50 rounded-lg border border-accent/30';
+          lineElement.innerHTML = line.replace('[BLANK]', '<span class="bg-white px-2 py-0.5 rounded border border-dashed border-accent text-accent font-medium">_____</span>');
+        }
+        // 未填写的空白
+        else {
+          lineElement.className = 'p-3 bg-teal-50 rounded-lg';
+          lineElement.innerHTML = line.replace('[BLANK]', '<span class="opacity-50">_____</span>');
+        }
+        
+        dialogContainer.appendChild(lineElement);
+      });
+      
+      // 更新选项
+      const optionsContainer = document.getElementById('dialog-options');
+      optionsContainer.innerHTML = '';
+      
+      const currentOptions = dialog.options[state.currentBlankIndex];
+      
+      currentOptions.forEach((option, index) => {
+        const optionElement = document.createElement('div');
+        optionElement.className = 'p-3 border border-gray-200 rounded-lg hover:bg-teal-50 cursor-pointer transition-colors';
+        optionElement.innerHTML = `<span class="font-medium mr-2">${String.fromCharCode(65 + index)}</span>${option}`;
+        
+        const isCorrect = option === dialog.blankWords[state.currentBlankIndex];
+        
+        optionElement.addEventListener('click', function() {
+          checkDialogAnswer(isCorrect, this, dialog, lineIndex);
+        });
+        
+        optionsContainer.appendChild(optionElement);
+      });
+    }
+
+    // 开始计时器
+    function startTimer(seconds, timerElementId, onComplete) {
+      stopTimer();
+      
+      let timeLeft = seconds;
+      document.getElementById(timerElementId).textContent = timeLeft;
+      
+      state.gameTimer = setInterval(() => {
+        timeLeft--;
+        document.getElementById(timerElementId).textContent = timeLeft;
+        
+        // 最后10秒添加视觉提醒
+        if (timeLeft <= 10) {
+          document.getElementById(timerElementId).classList.add('text-red-500', 'font-bold');
+          
+          // 最后5秒添加音效提醒
+          if (timeLeft <= 5 && timeLeft % 2 === 0) {
+            playSound('warning');
+          }
+        }
+        
+        if (timeLeft <= 0) {
+          stopTimer();
+          document.getElementById(timerElementId).classList.remove('text-red-500', 'font-bold');
+          onComplete();
+        }
+      }, 1000);
+    }
+
+    // 停止计时器
+    function stopTimer() {
+      if (state.gameTimer) {
+        clearInterval(state.gameTimer);
+        state.gameTimer = null;
+      }
+    }
+
+    // 显示游戏结果
+    function showResult(title, message, type = 'info') {
+      document.getElementById('result-title').textContent = title;
+      document.getElementById('result-message').textContent = message;
+      
+      const iconContainer = document.getElementById('result-icon-container');
+      iconContainer.className = 'w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center';
+      
+      if (type === 'success') {
+        iconContainer.classList.add('bg-green-100');
+        iconContainer.innerHTML = '<i class="fa fa-trophy text-2xl text-yellow-500"></i>';
+      } else if (type === 'error') {
+        iconContainer.classList.add('bg-red-100');
+        iconContainer.innerHTML = '<i class="fa fa-times-circle text-2xl text-red-500"></i>';
+      } else {
+        iconContainer.classList.add('bg-teal-100');
+        iconContainer.innerHTML = '<i class="fa fa-info-circle text-2xl text-accent"></i>';
+      }
+      
+      document.getElementById('result-modal').classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>
