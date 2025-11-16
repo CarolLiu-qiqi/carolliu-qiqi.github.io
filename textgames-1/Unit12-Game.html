@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>临        临检拿捕单元游戏
+    </title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- Tailwind 配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#8B0000',      // 深红色 - 代表执法和权威
+                        secondary: '#CD5C5C',    // 中红色
+                        accent: '#FFD700',       // 金色 - 代表荣誉和成就
+                        dark: '#2C3E50',         // 深色背景
+                        light: '#F8F9FA',        // 浅色背景
+                        success: '#27AE60',      // 成功绿色
+                        danger: '#E74C3C',       // 危险红色
+                    },
+                    fontFamily: {
+                        sans: ['Roboto', 'system-ui', 'sans-serif'],
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'bounce-slow': 'bounce 3s infinite',
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            }
+            .text-shadow-lg {
+                text-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            }
+            .bg-pattern {
+                background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            }
+            .card-hover {
+                transition: all 0.3s ease;
+            }
+            .card-hover:hover {
+                transform: translateY(-5px);
+            }
+            .card-flip {
+                perspective: 1500px;
+            }
+            .card-inner {
+                transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                transform-style: preserve-3d;
+            }
+            .card-front, .card-back {
+                backface-visibility: hidden;
+            }
+            .card-back {
+                transform: rotateY(180deg);
+            }
+            .flipped .card-inner {
+                transform: rotateY(180deg);
+            }
+            .progress-bar {
+                transition: width 0.5s ease-in-out;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-b from-light to-red-50 min-h-screen font-sans text-dark bg-pattern">
+    <!-- 顶部导航 -->
+    <header class="bg-primary text-white shadow-lg relative overflow-hidden">
+        <div class="absolute inset-0 opacity-10">
+            <i class="fa fa-gavel absolute top-1/4 left-10 text-6xl transform rotate-12"></i>
+            <i class="fa fa-shield absolute top-1/3 right-20 text-5xl"></i>
+            <i class="fa fa-flag absolute bottom-10 left-1/3 text-4xl"></i>
+        </div>
+        <div class="container mx-auto px-4 py-4 relative z-10">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="flex items-center space-x-3 mb-3 md:mb-0">
+                    <i class="fa fa-balance-scale text-accent text-3xl animate-pulse-slow"></i>
+                    <h1 class="text-xl md:text-2xl font-bold text-shadow text-center md:text-left">
+                        临检拿捕单元游戏
+                    </h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="hidden md:flex items-center bg-white/10 px-3 py-1.5 rounded-full">
+                        <i class="fa fa-trophy text-accent mr-2"></i>
+                        <span id="score" class="font-semibold">得分: 0</span>
+                    </div>
+                    <button id="sound-toggle" class="p-2 rounded-full hover:bg-primary/70 transition-colors">
+                        <i class="fa fa-volume-up"></i>
+                    </button>
+                    <button id="help-btn" class="p-2 rounded-full hover:bg-primary/70 transition-colors">
+                        <i class="fa fa-question"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- 游戏状态指示 -->
+        <div class="flex flex-wrap justify-between items-center gap-4 mb-8">
+            <div class="bg-white rounded-lg shadow-md p-3 flex items-center card-hover flex-1 max-w-[200px]">
+                <i class="fa fa-book text-primary mr-2 text-xl"></i>
+                <span>词汇总数: <span id="total-words">46</span></span>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-3 flex items-center card-hover flex-1 max-w-[200px]">
+                <i class="fa fa-check-circle text-success mr-2 text-xl"></i>
+                <span>已掌握: <span id="mastered-words">0</span></span>
+            </div>
+            <div class="md:hidden bg-white rounded-lg shadow-md p-3 flex items-center card-hover flex-1 max-w-[200px]">
+                <i class="fa fa-trophy text-accent mr-2 text-xl"></i>
+                <span id="mobile-score">得分: 0</span>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-3 flex items-center card-hover flex-1 max-w-[200px]">
+                <i class="fa fa-clock-o text-secondary mr-2 text-xl"></i>
+                <span>学习进度: <span id="progress-percent">0%</span></span>
+            </div>
+        </div>
+        
+        <!-- 进度条 -->
+        <div class="bg-white rounded-full h-2.5 mb-8 shadow-sm">
+            <div id="progress-bar" class="progress-bar bg-primary h-2.5 rounded-full" style="width: 0%"></div>
+        </div>
+
+        <!-- 游戏区域 -->
+        <div class="max-w-3xl mx-auto">
+            <!-- 游戏介绍/开始界面 -->
+            <div id="intro-screen" class="bg-white rounded-xl shadow-xl p-6 md:p-8 text-center animate-fade-in">
+                <div class="mb-6 relative">
+                    <div class="absolute -inset-1 bg-gradient-to-r from-primary to-secondary rounded-full blur opacity-30 animate-pulse-slow"></div>
+                    <div class="relative bg-white rounded-full p-6 inline-block">
+                        <i class="fa fa-gavel text-primary text-6xl animate-bounce-slow"></i>
+                    </div>
+                </div>
+                <h2 class="text-2xl md:text-3xl font-bold text-primary mb-4 text-shadow">执法专业词汇训练系统</h2>
+                <p class="text-gray-600 mb-8 max-w-lg mx-auto">
+                    通过互动训练掌握临检拿捕任务相关的专业英语词汇，提升执法行动中的国际协作与沟通能力。
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                    <div class="bg-red-50 p-5 rounded-lg text-left shadow-sm card-hover border border-red-100">
+                        <div class="flex items-center mb-3">
+                            <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mr-3">
+                                <i class="fa fa-book text-primary"></i>
+                            </div>
+                            <h3 class="font-semibold text-primary">学习模式</h3>
+                        </div>
+                        <p class="text-sm text-gray-600">浏览专业词汇卡片，学习拼写、音标和释义，标记已掌握的词汇</p>
+                    </div>
+                    <div class="bg-red-50 p-5 rounded-lg text-left shadow-sm card-hover border border-red-100">
+                        <div class="flex items-center mb-3">
+                            <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mr-3">
+                                <i class="fa fa-pencil text-primary"></i>
+                            </div>
+                            <h3 class="font-semibold text-primary">测试模式</h3>
+                        </div>
+                        <p class="text-sm text-gray-600">通过拼写测试检验学习成果，系统自动评分并提供反馈</p>
+                    </div>
+                </div>
+                <div class="flex flex-col sm:flex-row justify-center gap-4">
+                    <button id="start-learning" class="bg-primary hover:bg-primary/90 text-white font-semibold py-3 px-8 rounded-full shadow-md transition-all transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary/50">
+                        开始学习 <i class="fa fa-arrow-right ml-2"></i>
+                    </button>
+                    <button id="start-testing" class="bg-secondary hover:bg-secondary/90 text-white font-semibold py-3 px-8 rounded-full shadow-md transition-all transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-secondary/50">
+                        开始测试 <i class="fa fa-check-circle ml-2"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 学习模式 -->
+            <div id="learning-screen" class="hidden animate-fade-in">
+                <div class="bg-white rounded-xl shadow-xl p-6 mb-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <button id="back-to-intro" class="text-primary hover:text-primary/80 transition-colors flex items-center">
+                            <i class="fa fa-arrow-left mr-1"></i> 返回
+                        </button>
+                        <div class="bg-red-50 px-3 py-1 rounded-full text-sm">
+                            <span id="current-word-index">1</span> / <span id="words-count">46</span>
+                        </div>
+                        <button id="pronounce-word" class="text-primary hover:text-primary/80 transition-colors flex items-center">
+                            <i class="fa fa-volume-up mr-1"></i> 发音
+                        </button>
+                    </div>
+                    
+                    <!-- 单词卡片 -->
+                    <div class="card-flip h-72 mb-8">
+                        <div class="card-inner relative w-full h-full">
+                            <div class="card-front absolute w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-6 shadow-sm border border-red-100">
+                                <span class="text-xs uppercase tracking-wider text-gray-500 mb-2" id="learning-type">形容词</span>
+                                <h3 id="learning-word" class="text-4xl font-bold text-primary mb-3 text-shadow">单词</h3>
+                                <p id="learning-phonetic" class="text-gray-600 italic text-lg mb-6">音标</p>
+                                <button id="flip-card" class="mt-4 bg-white text-primary px-5 py-2.5 rounded-full shadow-sm hover:shadow transition-shadow transform hover:-translate-y-1">
+                                    查看释义 <i class="fa fa-refresh ml-1"></i>
+                                </button>
+                            </div>
+                            <div class="card-back absolute w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 shadow-sm border border-green-100">
+                                <h4 class="text-sm uppercase tracking-wider text-gray-500 mb-2">释义</h4>
+                                <p id="learning-definition" class="text-lg text-gray-800 mb-8 text-center">释义内容将显示在这里</p>
+                                <div class="flex space-x-3 mt-auto">
+                                    <button id="mark-mastered" class="bg-success text-white px-5 py-2.5 rounded-full shadow-sm hover:bg-success/80 transition-colors transform hover:-translate-y-1">
+                                        <i class="fa fa-check mr-1"></i> 已掌握
+                                    </button>
+                                    <button id="flip-back" class="bg-white text-primary px-5 py-2.5 rounded-full shadow-sm hover:shadow transition-shadow transform hover:-translate-y-1">
+                                        <i class="fa fa-refresh mr-1"></i> 返回
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-between">
+                        <button id="prev-word" class="bg-white text-primary border border-primary px-6 py-2.5 rounded-full shadow-sm hover:bg-primary hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-1">
+                            <i class="fa fa-arrow-left mr-1"></i> 上一个
+                        </button>
+                        <button id="next-word" class="bg-white text-primary border border-primary px-6 py-2.5 rounded-full shadow-sm hover:bg-primary hover:text-white transition-colors transform hover:-translate-y-1">
+                            下一个 <i class="fa fa-arrow-right ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 已掌握单词 -->
+                <div class="bg-white rounded-xl shadow-xl p-6">
+                    <h3 class="text-xl font-semibold text-primary mb-4 flex items-center">
+                        <i class="fa fa-check-circle text-success mr-2"></i> 已掌握词汇
+                    </h3>
+                    <div id="mastered-words-list" class="flex flex-wrap gap-2 max-h-40 overflow-y-auto pr-2">
+                        <p class="text-gray-500 italic">还没有掌握的词汇</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 测试模式 -->
+            <div id="testing-screen" class="hidden animate-fade-in">
+                <div class="bg-white rounded-xl shadow-xl p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <button id="back-to-intro-from-test" class="text-primary hover:text-primary/80 transition-colors flex items-center">
+                            <i class="fa fa-arrow-left mr-1"></i> 返回
+                        </button>
+                        <div class="bg-red-50 px-3 py-1 rounded-full text-sm">
+                            <span id="current-test-index">1</span> / <span id="tests-count">46</span>
+                        </div>
+                        <div class="text-accent font-semibold flex items-center">
+                            <i class="fa fa-trophy mr-1"></i> <span id="test-score">0</span>
+                        </div>
+                    </div>
+                    
+                    <h3 class="text-xl font-semibold text-gray-700 mb-4">请根据释义拼写专业词汇</h3>
+                    <div id="test-definition" class="bg-red-50 rounded-lg p-5 mb-6 text-gray-800 min-h-[100px] flex items-center justify-center shadow-sm border border-red-100">
+                        词汇释义将显示在这里
+                    </div>
+                    
+                    <div class="mb-6">
+                        <input type="text" id="spelling-input" class="w-full max-w-md mx-auto px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 text-lg text-center transition-all" placeholder="请输入词汇...">
+                    </div>
+                    
+                    <div class="flex flex-wrap justify-center gap-4 mb-6">
+                        <button id="check-answer" class="bg-primary hover:bg-primary/90 text-white font-semibold py-2.5 px-6 rounded-full shadow-md transition-all transform hover:-translate-y-1">
+                            检查答案
+                        </button>
+                        <button id="show-hint" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2.5 px-6 rounded-full shadow-md transition-all transform hover:-translate-y-1">
+                            <i class="fa fa-lightbulb-o mr-1"></i> 提示
+                        </button>
+                    </div>
+                    
+                    <div id="answer-feedback" class="mt-6 hidden transition-all duration-500">
+                        <div id="correct-feedback" class="hidden text-success bg-success/10 p-4 rounded-lg border border-success/20">
+                            <i class="fa fa-check-circle text-2xl mb-2"></i>
+                            <p class="font-medium">正确！太棒了！</p>
+                        </div>
+                        <div id="incorrect-feedback" class="hidden text-danger bg-danger/10 p-4 rounded-lg border border-danger/20">
+                            <i class="fa fa-times-circle text-2xl mb-2"></i>
+                            <p class="font-medium">不正确，请再试一次！</p>
+                            <p class="mt-2 text-gray-700">正确答案: <span id="correct-answer" class="font-semibold"></span></p>
+                        </div>
+                    </div>
+                    
+                    <button id="next-test" class="mt-6 bg-secondary hover:bg-secondary/90 text-white font-semibold py-2.5 px-6 rounded-full shadow-md transition-all transform hover:-translate-y-1 hidden">
+                        下一个词汇 <i class="fa fa-arrow-right ml-1"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 测试结果 -->
+            <div id="results-screen" class="hidden animate-fade-in bg-white rounded-xl shadow-xl p-6 md:p-8 text-center">
+                <div class="mb-8 relative inline-block">
+                    <div id="results-icon-container" class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i id="results-icon" class="fa fa-trophy text-4xl"></i>
+                    </div>
+                    <h2 class="text-2xl md:text-3xl font-bold text-primary mb-2">测试完成！</h2>
+                    <p class="text-gray-600 mb-2">你的专业词汇掌握程度：</p>
+                    <p class="text-3xl font-bold text-accent mb-6" id="final-score">0</p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    <div class="bg-red-50 p-5 rounded-lg shadow-sm border border-red-100">
+                        <h3 class="font-semibold text-primary mb-1">总题数</h3>
+                        <p id="total-questions" class="text-3xl font-bold">46</p>
+                    </div>
+                    <div class="bg-green-50 p-5 rounded-lg shadow-sm border border-green-100">
+                        <h3 class="font-semibold text-success mb-1">正确</h3>
+                        <p id="correct-questions" class="text-3xl font-bold">0</p>
+                    </div>
+                    <div class="bg-red-50 p-5 rounded-lg shadow-sm border border-red-100">
+                        <h3 class="font-semibold text-danger mb-1">错误</h3>
+                        <p id="wrong-questions" class="text-3xl font-bold">0</p>
+                    </div>
+                </div>
+                
+                <div id="results-message" class="bg-gray-50 p-4 rounded-lg mb-8 max-w-md mx-auto text-gray-700">
+                    继续努力，提升你的专业词汇量！
+                </div>
+                
+                <div class="flex flex-col sm:flex-row justify-center gap-4">
+                    <button id="restart-test" class="bg-primary hover:bg-primary/90 text-white font-semibold py-3 px-8 rounded-full shadow-md transition-all transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary/50">
+                        重新测试
+                    </button>
+                    <button id="back-to-learning" class="bg-secondary hover:bg-secondary/90 text-white font-semibold py-3 px-8 rounded-full shadow-md transition-all transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-secondary/50">
+                        返回学习
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 帮助模态框 -->
+    <div id="help-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden backdrop-blur-sm">
+        <div class="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4 transform transition-all scale-95 opacity-0" id="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-primary">使用帮助</h3>
+                <button id="close-help" class="text-gray-500 hover:text-gray-700 p-1">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="space-y-4 text-gray-700">
+                <div>
+                    <h4 class="font-semibold text-primary flex items-center">
+                        <i class="fa fa-book mr-2"></i> 学习模式
+                    </h4>
+                    <p class="text-sm mt-1">浏览专业词汇卡片，查看词汇、音标和释义。可以标记已掌握的词汇，系统会自动记录学习进度。</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-primary flex items-center">
+                        <i class="fa fa-pencil mr-2"></i> 测试模式
+                    </h4>
+                    <p class="text-sm mt-1">根据词汇释义拼写单词，系统会自动判断答案是否正确并给出分数。可以使用提示功能获得帮助，但会影响最终得分。</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-primary flex items-center">
+                        <i class="fa fa-trophy mr-2"></i> 评分标准
+                    </h4>
+                    <p class="text-sm mt-1">每答对一个问题得10分，未使用提示可获得5分额外奖励，使用提示将扣3分。满分690分，转换为百分比显示。</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-primary flex items-center">
+                        <i class="fa fa-volume-up mr-2"></i> 语音功能
+                    </h4>
+                    <p class="text-sm mt-1">点击发音按钮可听取单词标准发音，帮助提升听力和口语能力。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="bg-dark text-white py-6 mt-16">
+        <div class="container mx-auto px-4 text-center">
+            <div class="flex justify-center items-center mb-3">
+                <i class="fa fa-balance-scale text-accent mr-2"></i>
+                <p class="font-semibold">临检拿捕单元游戏</p>
+            </div>
+            <p class="text-sm text-gray-400">执法专业词汇训练系统 &copy; 2023</p>
+        </div>
+    </footer>
+
+    <script>
+        // 临检拿捕专业词汇数据
+        const words = [
+            {
+                word: "aggressive",
+                phonetic: "/əˈɡresɪv/",
+                definition: "a. 侵略性的，挑衅的",
+                type: "形容词"
+            },
+            {
+                word: "arrest",
+                phonetic: "/əˈrest/",
+                definition: "vt.＆ n. 逮捕，拘留",
+                type: "动词/名词"
+            },
+            {
+                word: "asylum",
+                phonetic: "/əˈsaɪləm/",
+                definition: "n. 庇护，收容所",
+                type: "名词"
+            },
+            {
+                word: "asylum seeker",
+                phonetic: "/əˈsaɪləm ˈsiːkə/",
+                definition: "寻求政治避难者",
+                type: "短语"
+            },
+            {
+                word: "Bangkok",
+                phonetic: "/bæŋˈkɒk/",
+                definition: "n. 曼谷（泰国首都）",
+                type: "名词"
+            },
+            {
+                word: "bail",
+                phonetic: "/beɪl/",
+                definition: "n. 保释，保证金",
+                type: "名词"
+            },
+            {
+                word: "bear full responsibility for",
+                phonetic: "/beə fʊl rɪˌspɒnsəˈbɪləti fɔː/",
+                definition: "对……负责",
+                type: "短语"
+            },
+            {
+                word: "bill of lading",
+                phonetic: "/bɪl ɒv ˈleɪdɪŋ/",
+                definition: "提货单",
+                type: "短语"
+            },
+            {
+                word: "blockade",
+                phonetic: "/blɒˈkeɪd/",
+                definition: "n. 封锁",
+                type: "名词"
+            },
+            {
+                word: "break through",
+                phonetic: "/breɪk θruː/",
+                definition: "突围，突破",
+                type: "短语"
+            },
+            {
+                word: "Certificate of Registry",
+                phonetic: "/səˈtɪfɪkət ɒv ˈredʒɪstri/",
+                definition: "登记证书",
+                type: "短语"
+            },
+            {
+                word: "charter",
+                phonetic: "/ˈtʃɑːtə/",
+                definition: "n. 租，包（船、车等）",
+                type: "名词"
+            },
+            {
+                word: "compartment",
+                phonetic: "/kəmˈpɑːtmənt/",
+                definition: "n. 舱室",
+                type: "名词"
+            },
+            {
+                word: "contraband",
+                phonetic: "/ˈkɒntrəˌbænd/",
+                definition: "n. 违法交易，违禁品，走私",
+                type: "名词"
+            },
+            {
+                word: "coordinate",
+                phonetic: "/kəʊˈɔːdɪnət/",
+                definition: "n. 坐标（用复数）",
+                type: "名词"
+            },
+            {
+                word: "custody",
+                phonetic: "/ˈkʌstədi/",
+                definition: "n. 监护，监管，拘留",
+                type: "名词"
+            },
+            {
+                word: "Danang",
+                phonetic: "/dɑːˈnæŋ/",
+                definition: "n. 岘港（越南港口）",
+                type: "名词"
+            },
+            {
+                word: "detain",
+                phonetic: "/dɪˈteɪn/",
+                definition: "vt. 拘留",
+                type: "动词"
+            },
+            {
+                word: "divert",
+                phonetic: "/daɪˈvɜːt/",
+                definition: "vt. 使转向；vi. 转向，转移",
+                type: "动词"
+            },
+            {
+                word: "embargo",
+                phonetic: "/ɪmˈbɑːɡəʊ/",
+                definition: "n. 禁运；vt. 禁止（船只）出入港口，禁运",
+                type: "名词/动词"
+            },
+            {
+                word: "fall in",
+                phonetic: "/fɔːl ɪn/",
+                definition: "集合",
+                type: "短语"
+            },
+            {
+                word: "general cargo",
+                phonetic: "/ˈdʒenərəl ˈkɑːɡəʊ/",
+                definition: "一般货物，杂货",
+                type: "短语"
+            },
+            {
+                word: "hatch",
+                phonetic: "/hætʃ/",
+                definition: "n. 货舱；舱口，舱门",
+                type: "名词"
+            },
+            {
+                word: "heave to",
+                phonetic: "/hiːv tuː/",
+                definition: "使（船）顶风停航，（船）停航",
+                type: "短语"
+            },
+            {
+                word: "hold",
+                phonetic: "/həʊld/",
+                definition: "n. 货舱",
+                type: "名词"
+            },
+            {
+                word: "humanitarian",
+                phonetic: "/hjuːˌmænɪˈteəriən/",
+                definition: "a. 人道主义的；n. 人道主义者",
+                type: "形容词/名词"
+            },
+            {
+                word: "illegally",
+                phonetic: "/ɪˈliːɡəli/",
+                definition: "a. 不合法的",
+                type: "形容词"
+            },
+            {
+                word: "interior",
+                phonetic: "/ɪnˈtɪəriə/",
+                definition: "a. 内部的，内的",
+                type: "形容词"
+            },
+            {
+                word: "intelligence",
+                phonetic: "/ɪnˈtelɪdʒəns/",
+                definition: "n. 谍报，情报（机构）",
+                type: "名词"
+            },
+            {
+                word: "interfere with",
+                phonetic: "/ˌɪntəˈfɪə wɪð/",
+                definition: "妨碍，干扰",
+                type: "短语"
+            },
+            {
+                word: "intrude",
+                phonetic: "/ɪnˈtruːd/",
+                definition: "vt. 闯入，侵入",
+                type: "动词"
+            },
+            {
+                word: "lading",
+                phonetic: "/ˈleɪdɪŋ/",
+                definition: "n. 装船，船货，装载的货物",
+                type: "名词"
+            },
+            {
+                word: "leeward",
+                phonetic: "/ˈliːwəd/",
+                definition: "a. 在下风方向的；adv. 向下风；n.下风",
+                type: "形容词/副词/名词"
+            },
+            {
+                word: "log",
+                phonetic: "/lɒɡ/",
+                definition: "n. 航行日志",
+                type: "名词"
+            },
+            {
+                word: "Manila",
+                phonetic: "/məˈnɪlə/",
+                definition: "n. 马尼拉（菲律宾首都）",
+                type: "名词"
+            },
+            {
+                word: "manifest",
+                phonetic: "/ˈmænɪfest/",
+                definition: "n. 载货单，旅客名单",
+                type: "名词"
+            },
+            {
+                word: "quarterdeck",
+                phonetic: "/ˈkwɔːtədek/",
+                definition: "n. 后甲板",
+                type: "名词"
+            },
+            {
+                word: "registry",
+                phonetic: "/ˈredʒɪstri/",
+                definition: "n. 注册，船舶的国籍",
+                type: "名词"
+            },
+            {
+                word: "release",
+                phonetic: "/rɪˈliːs/",
+                definition: "n. 释放，豁免；vt. 释放",
+                type: "名词/动词"
+            },
+            {
+                word: "retreat",
+                phonetic: "/rɪˈtriːt/",
+                definition: "vi. 撤退",
+                type: "动词"
+            },
+            {
+                word: "seizure",
+                phonetic: "/ˈsiːʒə/",
+                definition: "n. 抓捕；扣押；查封",
+                type: "名词"
+            },
+            {
+                word: "stowage",
+                phonetic: "/ˈstəʊɪdʒ/",
+                definition: "n. 装载量",
+                type: "名词"
+            },
+            {
+                word: "theatre",
+                phonetic: "/ˈθɪətə/",
+                definition: "n. 战区",
+                type: "名词"
+            },
+            {
+                word: "UN Convention on the Law of the Sea",
+                phonetic: "/ˌjuːˈen kənˈvenʃən ɒn ðə lɔː ɒv ðə siː/",
+                definition: "《联合国海洋法公约》",
+                type: "专有名词"
+            },
+            {
+                word: "violate",
+                phonetic: "/ˈvaɪəleɪt/",
+                definition: "vt. 违犯，违反",
+                type: "动词"
+            },
+            {
+                word: "violation",
+                phonetic: "/ˌvaɪəˈleɪʃən/",
+                definition: "n. 违反，违背",
+                type: "名词"
+            },
+            {
+                word: "westbound",
+                phonetic: "/ˈwestbaʊnd/",
+                definition: "a. 向西进行的，西行的",
+                type: "形容词"
+            }
+        ];
+
+        // 游戏状态
+        const gameState = {
+            currentWordIndex: 0,
+            currentTestIndex: 0,
+            masteredWords: [],
+            score: 0,
+            testScore: 0,
+            correctAnswers: 0,
+            wrongAnswers: 0,
+            usedHints: false,
+            shuffledTestWords: [...words] // 复制单词数组用于测试，后续会打乱顺序
+        };
+
+        // DOM 元素
+        const elements = {
+            // 屏幕
+            introScreen: document.getElementById('intro-screen'),
+            learningScreen: document.getElementById('learning-screen'),
+            testingScreen: document.getElementById('testing-screen'),
+            resultsScreen: document.getElementById('results-screen'),
+            
+            // 学习模式元素
+            learningWord: document.getElementById('learning-word'),
+            learningPhonetic: document.getElementById('learning-phonetic'),
+            learningDefinition: document.getElementById('learning-definition'),
+            learningType: document.getElementById('learning-type'),
+            currentWordIndex: document.getElementById('current-word-index'),
+            wordsCount: document.getElementById('words-count'),
+            prevWord: document.getElementById('prev-word'),
+            nextWord: document.getElementById('next-word'),
+            flipCard: document.getElementById('flip-card'),
+            flipBack: document.getElementById('flip-back'),
+            cardFlip: document.querySelector('.card-flip'),
+            markMastered: document.getElementById('mark-mastered'),
+            masteredWordsList: document.getElementById('mastered-words-list'),
+            masteredWordsCounter: document.getElementById('mastered-words'),
+            pronounceWord: document.getElementById('pronounce-word'),
+            progressBar: document.getElementById('progress-bar'),
+            progressPercent: document.getElementById('progress-percent'),
+            
+            // 测试模式元素
+            testDefinition: document.getElementById('test-definition'),
+            spellingInput: document.getElementById('spelling-input'),
+            checkAnswer: document.getElementById('check-answer'),
+            showHint: document.getElementById('show-hint'),
+            answerFeedback: document.getElementById('answer-feedback'),
+            correctFeedback: document.getElementById('correct-feedback'),
+            incorrectFeedback: document.getElementById('incorrect-feedback'),
+            correctAnswer: document.getElementById('correct-answer'),
+            nextTest: document.getElementById('next-test'),
+            currentTestIndex: document.getElementById('current-test-index'),
+            testsCount: document.getElementById('tests-count'),
+            testScore: document.getElementById('test-score'),
+            
+            // 结果屏幕元素
+            resultsIcon: document.getElementById('results-icon'),
+            resultsIconContainer: document.getElementById('results-icon-container'),
+            resultsMessage: document.getElementById('results-message'),
+            finalScore: document.getElementById('final-score'),
+            totalQuestions: document.getElementById('total-questions'),
+            correctQuestions: document.getElementById('correct-questions'),
+            wrongQuestions: document.getElementById('wrong-questions'),
+            
+            // 分数显示
+            scoreDisplay: document.getElementById('score'),
+            mobileScoreDisplay: document.getElementById('mobile-score'),
+            totalWordsCounter: document.getElementById('total-words'),
+            
+            // 按钮
+            startLearning: document.getElementById('start-learning'),
+            startTesting: document.getElementById('start-testing'),
+            backToIntro: document.getElementById('back-to-intro'),
+            backToIntroFromTest: document.getElementById('back-to-intro-from-test'),
+            restartTest: document.getElementById('restart-test'),
+            backToLearning: document.getElementById('back-to-learning'),
+            
+            // 帮助模态框
+            helpBtn: document.getElementById('help-btn'),
+            helpModal: document.getElementById('help-modal'),
+            closeHelp: document.getElementById('close-help'),
+            modalContent: document.getElementById('modal-content'),
+            
+            // 声音开关
+            soundToggle: document.getElementById('sound-toggle')
+        };
+
+        // 初始化
+        function init() {
+            // 设置单词总数
+            elements.wordsCount.textContent = words.length;
+            elements.testsCount.textContent = words.length;
+            elements.totalQuestions.textContent = words.length;
+            elements.totalWordsCounter.textContent = words.length;
+            
+            // 打乱测试单词顺序
+            shuffleArray(gameState.shuffledTestWords);
+            
+            // 事件监听
+            setupEventListeners();
+        }
+
+        // 设置事件监听
+        function setupEventListeners() {
+            // 开始学习按钮
+            elements.startLearning.addEventListener('click', () => {
+                elements.introScreen.classList.add('hidden');
+                elements.learningScreen.classList.remove('hidden');
+                loadWord(gameState.currentWordIndex);
+                updateProgress();
+            });
+            
+            // 开始测试按钮
+            elements.startTesting.addEventListener('click', () => {
+                resetTestState();
+                elements.introScreen.classList.add('hidden');
+                elements.testingScreen.classList.remove('hidden');
+                loadTestWord(gameState.currentTestIndex);
+            });
+            
+            // 返回按钮
+            elements.backToIntro.addEventListener('click', () => {
+                elements.learningScreen.classList.add('hidden');
+                elements.introScreen.classList.remove('hidden');
+            });
+            
+            elements.backToIntroFromTest.addEventListener('click', () => {
+                elements.testingScreen.classList.add('hidden');
+                elements.introScreen.classList.remove('hidden');
+            });
+            
+            // 上一个/下一个单词
+            elements.prevWord.addEventListener('click', () => {
+                if (gameState.currentWordIndex > 0) {
+                    gameState.currentWordIndex--;
+                    loadWord(gameState.currentWordIndex);
+                    updateNavigationButtons();
+                    updateProgress();
+                }
+            });
+            
+            elements.nextWord.addEventListener('click', () => {
+                if (gameState.currentWordIndex < words.length - 1) {
+                    gameState.currentWordIndex++;
+                    loadWord(gameState.currentWordIndex);
+                    updateNavigationButtons();
+                    updateProgress();
+                }
+            });
+            
+            // 卡片翻转
+            elements.flipCard.addEventListener('click', () => {
+                elements.cardFlip.classList.add('flipped');
+            });
+            
+            elements.flipBack.addEventListener('click', () => {
+                elements.cardFlip.classList.remove('flipped');
+            });
+            
+            // 标记为已掌握
+            elements.markMastered.addEventListener('click', () => {
+                const currentWord = words[gameState.currentWordIndex];
+                if (!gameState.masteredWords.includes(currentWord.word)) {
+                    gameState.masteredWords.push(currentWord.word);
+                    updateMasteredWordsList();
+                    elements.masteredWordsCounter.textContent = gameState.masteredWords.length;
+                    
+                    // 显示提示
+                    showToast(`${currentWord.word} 已标记为掌握`);
+                    
+                    // 自动翻到下一个单词
+                    if (gameState.currentWordIndex < words.length - 1) {
+                        gameState.currentWordIndex++;
+                        loadWord(gameState.currentWordIndex);
+                        updateNavigationButtons();
+                        updateProgress();
+                    } else {
+                        elements.cardFlip.classList.remove('flipped');
+                    }
+                    
+                    updateProgress();
+                }
+            });
+            
+            // 单词发音
+            elements.pronounceWord.addEventListener('click', () => {
+                const currentWord = words[gameState.currentWordIndex];
+                pronounceText(currentWord.word);
+            });
+            
+            // 测试模式
+            elements.checkAnswer.addEventListener('click', checkSpelling);
+            elements.spellingInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    checkSpelling();
+                }
+            });
+            
+            elements.showHint.addEventListener('click', showHint);
+            elements.nextTest.addEventListener('click', nextTestWord);
+            
+            // 结果屏幕按钮
+            elements.restartTest.addEventListener('click', () => {
+                resetTestState();
+                elements.resultsScreen.classList.add('hidden');
+                elements.testingScreen.classList.remove('hidden');
+                loadTestWord(gameState.currentTestIndex);
+            });
+            
+            elements.backToLearning.addEventListener('click', () => {
+                elements.resultsScreen.classList.add('hidden');
+                elements.learningScreen.classList.remove('hidden');
+            });
+            
+            // 帮助模态框
+            elements.helpBtn.addEventListener('click', () => {
+                elements.helpModal.classList.remove('hidden');
+                // 模态框动画
+                setTimeout(() => {
+                    elements.modalContent.classList.remove('scale-95', 'opacity-0');
+                    elements.modalContent.classList.add('scale-100', 'opacity-100');
+                }, 10);
+            });
+            
+            elements.closeHelp.addEventListener('click', closeHelpModal);
+            
+            // 点击模态框外部关闭
+            elements.helpModal.addEventListener('click', (e) => {
+                if (e.target === elements.helpModal) {
+                    closeHelpModal();
+                }
+            });
+            
+            // 声音开关
+            elements.soundToggle.addEventListener('click', toggleSound);
+        }
+        
+        // 关闭帮助模态框
+        function closeHelpModal() {
+            elements.modalContent.classList.remove('scale-100', 'opacity-100');
+            elements.modalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                elements.helpModal.classList.add('hidden');
+            }, 300);
+        }
+
+        // 加载单词到学习界面
+        function loadWord(index) {
+            const word = words[index];
+            elements.learningWord.textContent = word.word;
+            elements.learningPhonetic.textContent = word.phonetic || '';
+            elements.learningDefinition.textContent = word.definition;
+            elements.learningType.textContent = word.type;
+            elements.currentWordIndex.textContent = index + 1;
+            
+            // 重置卡片状态
+            elements.cardFlip.classList.remove('flipped');
+            
+            // 更新"已掌握"按钮状态
+            if (gameState.masteredWords.includes(word.word)) {
+                elements.markMastered.disabled = true;
+                elements.markMastered.innerHTML = '<i class="fa fa-check mr-1"></i> 已掌握 ✓';
+                elements.markMastered.classList.add('opacity-70');
+            } else {
+                elements.markMastered.disabled = false;
+                elements.markMastered.innerHTML = '<i class="fa fa-check mr-1"></i> 已掌握';
+                elements.markMastered.classList.remove('opacity-70');
+            }
+        }
+
+        // 更新导航按钮状态
+        function updateNavigationButtons() {
+            elements.prevWord.disabled = gameState.currentWordIndex === 0;
+            elements.nextWord.disabled = gameState.currentWordIndex === words.length - 1;
+        }
+        
+        // 更新学习进度
+        function updateProgress() {
+            const progress = Math.round((gameState.masteredWords.length / words.length) * 100);
+            elements.progressBar.style.width = `${progress}%`;
+            elements.progressPercent.textContent = `${progress}%`;
+        }
+
+        // 更新已掌握单词列表
+        function updateMasteredWordsList() {
+            if (gameState.masteredWords.length === 0) {
+                elements.masteredWordsList.innerHTML = '<p class="text-gray-500 italic">还没有掌握的词汇</p>';
+                return;
+            }
+            
+            elements.masteredWordsList.innerHTML = '';
+            gameState.masteredWords.forEach(word => {
+                const badge = document.createElement('span');
+                badge.className = 'bg-success/20 text-success px-3 py-1.5 rounded-full text-sm flex items-center card-hover';
+                badge.innerHTML = `${word} <button class="ml-1 text-success/70 hover:text-success focus:outline-none" onclick="removeMasteredWord('${word}')"><i class="fa fa-times-circle"></i></button>`;
+                elements.masteredWordsList.appendChild(badge);
+            });
+            
+            updateProgress();
+        }
+
+        // 从已掌握列表移除单词
+        function removeMasteredWord(word) {
+            gameState.masteredWords = gameState.masteredWords.filter(w => w !== word);
+            updateMasteredWordsList();
+            elements.masteredWordsCounter.textContent = gameState.masteredWords.length;
+            
+            // 如果当前正在查看的单词被移除，更新按钮状态
+            const currentWord = words[gameState.currentWordIndex];
+            if (currentWord.word === word) {
+                elements.markMastered.disabled = false;
+                elements.markMastered.innerHTML = '<i class="fa fa-check mr-1"></i> 已掌握';
+                elements.markMastered.classList.remove('opacity-70');
+            }
+        }
+
+        // 加载测试单词
+        function loadTestWord(index) {
+            const word = gameState.shuffledTestWords[index];
+            elements.testDefinition.textContent = word.definition;
+            elements.currentTestIndex.textContent = index + 1;
+            elements.spellingInput.value = '';
+            elements.spellingInput.focus();
+            elements.answerFeedback.classList.add('hidden');
+            elements.correctFeedback.classList.add('hidden');
+            elements.incorrectFeedback.classList.add('hidden');
+            elements.nextTest.classList.add('hidden');
+            elements.checkAnswer.classList.remove('hidden');
+            elements.showHint.classList.remove('hidden');
+            gameState.usedHints = false;
+        }
+
+        // 检查拼写
+        function checkSpelling() {
+            const userInput = elements.spellingInput.value.trim().toLowerCase();
+            const currentWord = gameState.shuffledTestWords[gameState.currentTestIndex].word.toLowerCase();
+            
+            elements.answerFeedback.classList.remove('hidden');
+            elements.checkAnswer.classList.add('hidden');
+            elements.showHint.classList.add('hidden');
+            
+            if (userInput === currentWord) {
+                // 正确答案
+                elements.correctFeedback.classList.remove('hidden');
+                gameState.correctAnswers++;
+                
+                // 计算得分：基础10分，没使用提示加5分
+                let points = 10;
+                if (!gameState.usedHints) {
+                    points += 5;
+                }
+                gameState.testScore += points;
+                
+                showToast(`正确！+${points}分`);
+            } else {
+                // 错误答案
+                elements.incorrectFeedback.classList.remove('hidden');
+                elements.correctAnswer.textContent = gameState.shuffledTestWords[gameState.currentTestIndex].word;
+                gameState.wrongAnswers++;
+                
+                // 错误不扣分，但使用了提示要扣分
+                if (gameState.usedHints) {
+                    gameState.testScore = Math.max(0, gameState.testScore - 3);
+                    showToast(`错误，-3分`);
+                } else {
+                    showToast(`错误`);
+                }
+            }
+            
+            // 更新分数显示
+            elements.testScore.textContent = gameState.testScore;
+            elements.scoreDisplay.textContent = `得分: ${gameState.testScore}`;
+            elements.mobileScoreDisplay.textContent = `得分: ${gameState.testScore}`;
+            
+            // 显示下一题按钮
+            elements.nextTest.classList.remove('hidden');
+        }
+
+        // 显示提示
+        function showHint() {
+            const currentWord = gameState.shuffledTestWords[gameState.currentTestIndex].word;
+            const currentInput = elements.spellingInput.value;
+            
+            if (currentInput.length === 0) {
+                // 第一次提示：显示首字母
+                elements.spellingInput.value = currentWord[0];
+                showToast('提示：已显示首字母');
+            } else if (currentInput.length < currentWord.length / 2) {
+                // 第二次提示：显示前半部分
+                const halfLength = Math.floor(currentWord.length / 2);
+                elements.spellingInput.value = currentWord.substring(0, halfLength);
+                showToast('提示：已显示前半部分');
+            } else {
+                // 第三次提示：显示单词长度
+                showToast(`提示：单词长度为 ${currentWord.length} 个字母`);
+            }
+            
+            gameState.usedHints = true;
+        }
+
+        // 下一个测试单词
+        function nextTestWord() {
+            gameState.currentTestIndex++;
+            
+            if (gameState.currentTestIndex < gameState.shuffledTestWords.length) {
+                loadTestWord(gameState.currentTestIndex);
+            } else {
+                // 测试结束，显示结果
+                showResults();
+            }
+        }
+
+        // 显示测试结果
+        function showResults() {
+            elements.testingScreen.classList.add('hidden');
+            elements.resultsScreen.classList.remove('hidden');
+            
+            // 计算最终得分百分比
+            const percentage = Math.round((gameState.testScore / (words.length * 15)) * 100);
+            elements.finalScore.textContent = `${percentage}%`;
+            
+            // 更新结果统计
+            elements.correctQuestions.textContent = gameState.correctAnswers;
+            elements.wrongQuestions.textContent = gameState.wrongAnswers;
+            
+            // 根据得分设置不同图标和消息
+            if (percentage >= 90) {
+                elements.resultsIcon.className = 'fa fa-trophy text-4xl text-accent';
+                elements.resultsIconContainer.className = 'w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 bg-accent/10';
+                elements.resultsMessage.textContent = '优秀！你已熟练掌握这些专业词汇，可以自信地执行国际执法任务了！';
+                elements.resultsMessage.className = 'bg-accent/10 p-4 rounded-lg mb-8 max-w-md mx-auto text-gray-700 border border-accent/20';
+            } else if (percentage >= 70) {
+                elements.resultsIcon.className = 'fa fa-star text-4xl text-yellow-500';
+                elements.resultsIconContainer.className = 'w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 bg-yellow-500/10';
+                elements.resultsMessage.textContent = '良好！你已经掌握了大部分专业词汇，继续努力可以更加熟练！';
+                elements.resultsMessage.className = 'bg-yellow-500/10 p-4 rounded-lg mb-8 max-w-md mx-auto text-gray-700 border border-yellow-500/20';
+            } else if (percentage >= 50) {
+                elements.resultsIcon.className = 'fa fa-check-circle text-4xl text-success';
+                elements.resultsIconContainer.className = 'w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 bg-success/10';
+                elements.resultsMessage.textContent = '不错！你已经掌握了基础的专业词汇，但还需要更多练习来巩固记忆。';
+                elements.resultsMessage.className = 'bg-success/10 p-4 rounded-lg mb-8 max-w-md mx-auto text-gray-700 border border-success/20';
+            } else {
+                elements.resultsIcon.className = 'fa fa-arrow-circle-up text-4xl text-primary';
+                elements.resultsIconContainer.className = 'w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 bg-primary/10';
+                elements.resultsMessage.textContent = '继续努力！建议先通过学习模式熟悉词汇，再进行测试会有更好的效果。';
+                elements.resultsMessage.className = 'bg-primary/10 p-4 rounded-lg mb-8 max-w-md mx-auto text-gray-700 border border-primary/20';
+            }
+        }
+
+        // 重置测试状态
+        function resetTestState() {
+            gameState.currentTestIndex = 0;
+            gameState.testScore = 0;
+            gameState.correctAnswers = 0;
+            gameState.wrongAnswers = 0;
+            elements.testScore.textContent = '0';
+            elements.scoreDisplay.textContent = `得分: 0`;
+            elements.mobileScoreDisplay.textContent = `得分: 0`;
+            
+            // 重新打乱测试顺序
+            shuffleArray(gameState.shuffledTestWords);
+        }
+
+        // 文字转语音
+        function pronounceText(text) {
+            // 检查浏览器是否支持语音合成
+            if ('speechSynthesis' in window) {
+                // 停止任何正在播放的语音
+                window.speechSynthesis.cancel();
+                
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.9; // 稍微放慢语速
+                speechSynthesis.speak(utterance);
+            } else {
+                showToast('您的浏览器不支持语音合成功能');
+            }
+        }
+
+        // 切换声音
+        function toggleSound() {
+            const icon = elements.soundToggle.querySelector('i');
+            if (icon.classList.contains('fa-volume-up')) {
+                icon.classList.remove('fa-volume-up');
+                icon.classList.add('fa-volume-off');
+                showToast('声音已关闭');
+                // 停止任何正在播放的语音
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                }
+            } else {
+                icon.classList.remove('fa-volume-off');
+                icon.classList.add('fa-volume-up');
+                showToast('声音已开启');
+            }
+        }
+
+        // 显示提示消息
+        function showToast(message) {
+            // 检查是否已有toast
+            let toast = document.querySelector('.toast-notification');
+            if (toast) {
+                toast.remove();
+            }
+            
+            // 创建新toast
+            toast = document.createElement('div');
+            toast.className = 'toast-notification fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-dark text-white px-4 py-2.5 rounded-lg shadow-lg z-50 transition-all duration-300 opacity-0';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            // 显示toast
+            setTimeout(() => {
+                toast.classList.add('opacity-100');
+            }, 10);
+            
+            // 3秒后隐藏
+            setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 3000);
+        }
+
+        // 打乱数组顺序（Fisher-Yates算法）
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // 暴露removeMasteredWord函数到全局，以便在HTML中调用
+        window.removeMasteredWord = removeMasteredWord;
+
+        // 初始化游戏
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

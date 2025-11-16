@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unit 2 Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- 配置Tailwind自定义颜色和字体 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        nautical: {
+                            blue: '#0A3D62',
+                            light: '#3C6382',
+                            accent: '#F9CA24',
+                            wave: '#60A3BC',
+                            sand: '#F8C471'
+                        }
+                    },
+                    fontFamily: {
+                        nautical: ['"Trebuchet MS"', 'sans-serif']
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .text-shadow {
+                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            }
+            .bounce-in {
+                animation: bounce-in 0.5s ease-out;
+            }
+            .pulse-scale {
+                animation: pulse-scale 0.6s ease-in-out;
+            }
+            .correct-vowel {
+                color: #F9CA24;
+                font-weight: bold;
+                animation: pop 0.4s ease-out;
+            }
+            .float {
+                animation: float 3s ease-in-out infinite;
+            }
+            .slide-out {
+                animation: slide-out 0.5s ease-in forwards;
+            }
+            .slide-in {
+                animation: slide-in 0.5s ease-out forwards;
+            }
+            .wave-animation {
+                animation: wave 15s linear infinite;
+            }
+            .wave-animation-slow {
+                animation: wave 20s linear infinite;
+                animation-direction: reverse;
+            }
+            .boat-rock {
+                animation: boat-rock 4s ease-in-out infinite;
+            }
+            
+            @keyframes bounce-in {
+                0% { transform: scale(0.8); opacity: 0; }
+                70% { transform: scale(1.1); }
+                100% { transform: scale(1); opacity: 1; }
+            }
+            @keyframes pulse-scale {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.08); }
+                100% { transform: scale(1); }
+            }
+            @keyframes pop {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.5); }
+                100% { transform: scale(1); }
+            }
+            @keyframes float {
+                0% { transform: translateY(0px); }
+                50% { transform: translateY(-10px); }
+                100% { transform: translateY(0px); }
+            }
+            @keyframes slide-out {
+                0% { transform: translateX(0); opacity: 1; }
+                100% { transform: translateX(-50px); opacity: 0; }
+            }
+            @keyframes slide-in {
+                0% { transform: translateX(50px); opacity: 0; }
+                100% { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes wave {
+                0% { background-position-x: 0; }
+                100% { background-position-x: 1000px; }
+            }
+            @keyframes boat-rock {
+                0% { transform: rotate(-2deg); }
+                50% { transform: rotate(2deg); }
+                100% { transform: rotate(-2deg); }
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-b from-blue-400 to-blue-600 min-h-screen font-nautical overflow-hidden">
+    <!-- 背景装饰 - 云朵 -->
+    <div class="fixed top-10 left-10 text-white/70 text-8xl float">
+        <i class="fa fa-cloud"></i>
+    </div>
+    <div class="fixed top-20 right-20 text-white/60 text-7xl float" style="animation-delay: 1s;">
+        <i class="fa fa-cloud"></i>
+    </div>
+    <div class="fixed top-40 left-1/3 text-white/50 text-9xl float" style="animation-delay: 0.5s;">
+        <i class="fa fa-cloud"></i>
+    </div>
+    
+    <!-- 背景装饰 - 波浪效果 -->
+    <div class="fixed bottom-0 left-0 w-full h-40 bg-repeat-x wave-animation" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 1440 320\"><path fill=\"%2360A3BC\" fill-opacity=\"0.7\" d=\"M0,192L48,181.3C96,171,192,149,288,149.3C384,149,480,171,576,181.3C672,192,768,192,864,181.3C960,171,1056,149,1152,144C1248,139,1344,149,1392,154.7L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z\"></path></svg>');"></div>
+    <div class="fixed bottom-0 left-0 w-full h-32 bg-repeat-x wave-animation-slow" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 1440 320\"><path fill=\"%233C6382\" fill-opacity=\"0.8\" d=\"M0,160L48,165.3C96,171,192,181,288,181.3C384,181,480,171,576,160C672,149,768,139,864,144C960,149,1056,171,1152,181.3C1248,192,1344,192,1392,192L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z\"></path></svg>');"></div>
+    
+    <!-- 游戏音效元素 (隐藏) -->
+    <audio id="bg-music" loop>
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="coin-sound">
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="correct-sound">
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="wrong-sound">
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3" type="audio/mpeg">
+    
+    </audio>
+    
+    <!-- 游戏容器 -->
+    <div id="game-container" class="relative w-full h-screen">
+        <!-- 开始界面 -->
+        <div id="start-screen" class="absolute inset-0 flex flex-col items-center justify-center bg-nautical-blue/80 z-50">
+            <div class="text-center mb-8">
+                <i class="fa fa-ship text-6xl text-nautical-accent mb-6 float boat-rock"></i>
+                <h1 class="text-[clamp(2.5rem,6vw,4.5rem)] font-bold text-white mb-6 text-shadow">Unit 2 Game</h1>
+            </div>
+            <p class="text-[clamp(1.1rem,3vw,1.6rem)] text-blue-100 mb-10 max-w-lg text-center px-4">
+                控制船只左右移动，接住正确的元音字母补全航海术语！<br>
+                游戏时间：3分钟
+            </p>
+            <div class="flex items-center mb-8">
+                <button id="toggle-music" class="bg-white/20 hover:bg-white/30 text-white p-3 rounded-full mr-4 transition-all">
+                    <i class="fa fa-music text-2xl"></i>
+                </button>
+                <span class="text-white">背景音乐</span>
+            </div>
+            <button id="start-btn" class="bg-nautical-accent hover:bg-yellow-400 text-nautical-blue font-bold py-4 px-12 rounded-full text-xl transition-all transform hover:scale-110 focus:outline-none focus:ring-4 focus:ring-yellow-300">
+                开始航行 <i class="fa fa-compass ml-2"></i>
+            </button>
+        </div>
+        
+        <!-- 游戏界面 -->
+        <div id="game-screen" class="hidden relative w-full h-full">
+            <!-- 顶部信息栏 -->
+            <div class="absolute top-4 left-0 right-0 flex justify-between px-4">
+                <!-- 计分板 -->
+                <div class="bg-white/90 text-nautical-blue p-3 rounded-lg backdrop-blur-sm shadow-md">
+                    <p class="text-lg"><i class="fa fa-diamond text-nautical-accent mr-2"></i> 得分: <span id="score" class="font-bold">0</span></p>
+                </div>
+                
+                <!-- 计时器 -->
+                <div class="bg-white/90 text-nautical-blue p-3 rounded-lg backdrop-blur-sm shadow-md">
+                    <p class="text-lg"><i class="fa fa-clock-o text-nautical-accent mr-2"></i> 剩余时间: <span id="timer" class="font-bold">180</span>秒</p>
+                </div>
+            </div>
+            
+            <!-- 单词/船只容器 -->
+            <div id="word-container" class="absolute bottom-40 left-0 w-full flex justify-center z-20"></div>
+            
+            <!-- 元音字母容器 -->
+            <div id="vowels-container" class="absolute inset-0 pointer-events-none"></div>
+            
+            <!-- 视觉反馈容器 -->
+            <div id="feedback-container" class="absolute inset-0 pointer-events-none z-30"></div>
+        </div>
+        
+        <!-- 结束界面 -->
+        <div id="end-screen" class="hidden absolute inset-0 flex flex-col items-center justify-center bg-nautical-blue/80 z-50">
+            <h2 class="text-[clamp(2rem,5vw,3.5rem)] font-bold text-white mb-4 text-shadow">航行结束！</h2>
+            <p class="text-[clamp(1.3rem,3vw,2.2rem)] text-blue-100 mb-8">
+                你的得分: <span id="final-score" class="text-nautical-accent font-bold">0</span>
+            </p>
+            <button id="restart-btn" class="bg-nautical-accent hover:bg-yellow-400 text-nautical-blue font-bold py-4 px-12 rounded-full text-xl transition-all transform hover:scale-110 focus:outline-none focus:ring-4 focus:ring-yellow-300">
+                再次航行 <i class="fa fa-refresh ml-2"></i>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 游戏配置
+        const GAME_CONFIG = {
+            duration: 180, // 3分钟
+            vowelSpeed: 1.8,
+            vowelSpawnRate: 1300,
+            wordTransitionTime: 500
+        };
+        
+        // 航海术语单词列表 - 包含需要补全的元音
+        const WORDS = [
+            ["abeam", "b**m"],               // 需要: e, a
+            ["astern", "st*rn"],             // 需要: e
+            ["voyage", "v*y*g*"],            // 需要: o, a, e (来自Bon voyage)
+            ["congested", "c*ng*st*d"],      // 需要: o, e, e
+            ["collision", "c*ll*s*on"],      // 需要: o, i, i
+            ["designated", "d*s*gn*t*d"],    // 需要: e, i, a, e
+            ["disabled", "d*s*bl*d"],        // 需要: i, a, e (来自disabled ship)
+            ["dredging", "dr*g*ng"],         // 需要: e, i
+            ["following", "f*ll*w*ng"],      // 需要: o, o, i (来自following seas)
+            ["lateral", "l*t*r*l"],          // 需要: a, e, a
+            ["obstruction", "bstr*ct*on"],   // 需要: o, u, i (来自obstruction)
+            ["overtake", "v*rt*k*"],         // 需要: o, e, e (来自overtake)
+            ["departure", "d*p*rt*r*"],      // 需要: e, a, u, e (来自port of departure)
+            ["quarter", "q**rt*r"],          // 需要: u, a, e
+            ["unidentified", "un*d*nt*f*ed"],// 需要: i, e, i, i
+            ["windward", "w*ndw*rd"],        // 需要: i, a
+            ["wreck", "wr*ck"]               // 需要: e
+        ];
+        
+        // 游戏状态
+        const gameState = {
+            score: 0,
+            timeRemaining: GAME_CONFIG.duration,
+            currentWord: null,
+            currentWordIndex: 0,
+            requiredVowels: [],
+            currentVowelIndex: 0,
+            vowels: [],
+            isPlaying: false,
+            isTransitioning: false,
+            musicEnabled: true,
+            gameInterval: null,
+            vowelSpawnInterval: null,
+            timerInterval: null,
+            wordElement: null
+        };
+        
+        // DOM 元素
+        const elements = {
+            startScreen: document.getElementById('start-screen'),
+            gameScreen: document.getElementById('game-screen'),
+            endScreen: document.getElementById('end-screen'),
+            startBtn: document.getElementById('start-btn'),
+            restartBtn: document.getElementById('restart-btn'),
+            toggleMusicBtn: document.getElementById('toggle-music'),
+            scoreDisplay: document.getElementById('score'),
+            finalScoreDisplay: document.getElementById('final-score'),
+            timerDisplay: document.getElementById('timer'),
+            wordContainer: document.getElementById('word-container'),
+            vowelsContainer: document.getElementById('vowels-container'),
+            feedbackContainer: document.getElementById('feedback-container'),
+            // 音效元素
+            bgMusic: document.getElementById('bg-music'),
+            coinSound: document.getElementById('coin-sound'),
+            correctSound: document.getElementById('correct-sound'),
+            wrongSound: document.getElementById('wrong-sound')
+        };
+        
+        // 音效控制
+        function toggleMusic() {
+            gameState.musicEnabled = !gameState.musicEnabled;
+            
+            if (gameState.musicEnabled) {
+                elements.bgMusic.play();
+                elements.toggleMusicBtn.innerHTML = '<i class="fa fa-music text-2xl"></i>';
+            } else {
+                elements.bgMusic.pause();
+                elements.toggleMusicBtn.innerHTML = '<i class="fa fa-volume-off text-2xl"></i>';
+            }
+        }
+        
+        function playSound(soundElement) {
+            if (gameState.musicEnabled) {
+                // 克隆音频元素以允许连续播放
+                const clone = soundElement.cloneNode();
+                clone.play();
+                // 播放结束后移除克隆元素
+                clone.addEventListener('ended', () => clone.remove());
+            }
+        }
+        
+        // 初始化游戏
+        function initGame() {
+            // 重置游戏状态
+            gameState.score = 0;
+            gameState.timeRemaining = GAME_CONFIG.duration;
+            gameState.currentWordIndex = 0;
+            gameState.vowels = [];
+            gameState.isPlaying = true;
+            gameState.isTransitioning = false;
+            
+            // 更新显示
+            elements.scoreDisplay.textContent = '0';
+            elements.timerDisplay.textContent = GAME_CONFIG.duration;
+            elements.finalScoreDisplay.textContent = '0';
+            elements.timerDisplay.classList.remove('text-red-500', 'scale-110');
+            
+            // 播放背景音乐
+            if (gameState.musicEnabled) {
+                elements.bgMusic.currentTime = 0;
+                elements.bgMusic.play();
+            }
+            
+            // 清除容器
+            clearContainers();
+            
+            // 加载第一个单词
+            loadNextWord();
+            
+            // 开始生成元音
+            startVowelSpawn();
+            
+            // 开始计时器
+            startTimer();
+            
+            // 开始游戏循环
+            startGameLoop();
+        }
+        
+        // 清除所有容器
+        function clearContainers() {
+            elements.wordContainer.innerHTML = '';
+            elements.vowelsContainer.innerHTML = '';
+            elements.feedbackContainer.innerHTML = '';
+        }
+        
+        // 加载下一个单词
+        function loadNextWord() {
+            gameState.isTransitioning = true;
+            
+            if (gameState.currentWordIndex >= WORDS.length) {
+                gameState.currentWordIndex = 0;
+            }
+            
+            const [fullWord, missingVowelsWord] = WORDS[gameState.currentWordIndex];
+            
+            // 提取需要的元音字母（按顺序）
+            gameState.requiredVowels = [];
+            for (let i = 0; i < Math.min(fullWord.length, missingVowelsWord.length); i++) {
+                if (missingVowelsWord[i] === '*') {
+                    const char = fullWord[i].toLowerCase();
+                    if ('aeiou'.includes(char)) {
+                        gameState.requiredVowels.push(char);
+                    }
+                }
+            }
+            
+            // 安全检查：确保至少有一个元音需要补全
+            if (gameState.requiredVowels.length === 0) {
+                gameState.currentWordIndex++;
+                loadNextWord();
+                return;
+            }
+            
+            // 重置当前元音索引
+            gameState.currentVowelIndex = 0;
+            
+            // 保存当前单词信息
+            gameState.currentWord = {
+                full: fullWord,
+                withBlanks: missingVowelsWord,
+                current: missingVowelsWord
+            };
+            
+            // 单词切换动画
+            if (gameState.wordElement) {
+                gameState.wordElement.classList.add('slide-out');
+                
+                setTimeout(() => {
+                    createWordElement();
+                    gameState.currentWordIndex++;
+                    gameState.isTransitioning = false;
+                }, GAME_CONFIG.wordTransitionTime);
+            } else {
+                createWordElement();
+                gameState.currentWordIndex++;
+                gameState.isTransitioning = false;
+            }
+        }
+        
+        // 创建单词元素（结合船的图标）
+        function createWordElement() {
+            elements.wordContainer.innerHTML = '';
+            
+            const wordElement = document.createElement('div');
+            wordElement.id = 'current-word';
+            wordElement.className = 'text-[clamp(1.8rem,5vw,3rem)] font-bold text-white flex items-center p-4 bg-nautical-blue/60 rounded-full backdrop-blur-sm shadow-lg slide-in boat-rock';
+            
+            const icon = document.createElement('i');
+            icon.className = 'fa fa-ship text-nautical-accent mr-3 text-3xl';
+            wordElement.appendChild(icon);
+            
+            // 创建带格式的单词文本
+            const wordTextContainer = document.createElement('span');
+            wordTextContainer.id = 'word-text';
+            
+            // 逐个字符创建span元素
+            for (let char of gameState.currentWord.current) {
+                const charSpan = document.createElement('span');
+                charSpan.textContent = char;
+                charSpan.className = 'mx-0.5';
+                if (char === '*') {
+                    charSpan.classList.add('text-nautical-accent/80');
+                }
+                wordTextContainer.appendChild(charSpan);
+            }
+            
+            wordElement.appendChild(wordTextContainer);
+            elements.wordContainer.appendChild(wordElement);
+            gameState.wordElement = wordElement;
+        }
+        
+        // 更新单词显示
+        function updateWordDisplay() {
+            if (!gameState.wordElement) return;
+            
+            const wordTextContainer = document.getElementById('word-text');
+            if (!wordTextContainer) return;
+            
+            wordTextContainer.innerHTML = '';
+            
+            // 重新构建单词显示
+            let charIndex = 0;
+            let vowelsAdded = 0;
+            
+            for (let char of gameState.currentWord.current) {
+                const charSpan = document.createElement('span');
+                charSpan.textContent = char;
+                charSpan.className = 'mx-0.5 transition-all duration-300';
+                
+                // 标记新补全的元音
+                if (char !== '*' && gameState.currentWord.withBlanks[charIndex] === '*') {
+                    vowelsAdded++;
+                    if (vowelsAdded === gameState.currentVowelIndex) {
+                        charSpan.classList.add('correct-vowel');
+                    }
+                } else if (char === '*') {
+                    charSpan.classList.add('text-nautical-accent/80');
+                }
+                
+                wordTextContainer.appendChild(charSpan);
+                charIndex++;
+            }
+            
+            // 添加单词整体动画
+            gameState.wordElement.classList.add('pulse-scale');
+            setTimeout(() => {
+                gameState.wordElement.classList.remove('pulse-scale');
+            }, 600);
+        }
+        
+        // 创建视觉反馈
+        function createFeedback(text, isPositive = true, x, y) {
+            const feedback = document.createElement('div');
+            feedback.className = `absolute text-xl font-bold ${isPositive ? 'text-nautical-accent' : 'text-red-400'} bounce-in`;
+            feedback.textContent = text;
+            feedback.style.left = `${x}px`;
+            feedback.style.top = `${y}px`;
+            
+            elements.feedbackContainer.appendChild(feedback);
+            
+            // 自动移除反馈
+            setTimeout(() => {
+                feedback.style.opacity = '0';
+                feedback.style.transform = 'translateY(-20px)';
+                feedback.style.transition = 'opacity 0.5s, transform 0.5s';
+                
+                setTimeout(() => {
+                    feedback.remove();
+                }, 500);
+            }, 1000);
+        }
+        
+        // 生成元音
+        function spawnVowel() {
+            if (gameState.isTransitioning) return;
+            
+            const vowels = ['a', 'e', 'i', 'o', 'u'];
+            const randomVowel = vowels[Math.floor(Math.random() * vowels.length)];
+            
+            const vowelElement = document.createElement('div');
+            vowelElement.className = 'absolute text-[clamp(1.8rem,4vw,3rem)] font-bold bounce-in';
+            vowelElement.textContent = randomVowel.toUpperCase();
+            
+            // 根据是否是当前需要的元音设置颜色
+            const isRequired = gameState.requiredVowels.length > 0 && 
+                              gameState.requiredVowels[gameState.currentVowelIndex] === randomVowel;
+            vowelElement.classList.add(isRequired ? 'text-nautical-accent' : 'gray-400');
+            
+            const maxX = elements.vowelsContainer.offsetWidth - 60;
+            const randomX = Math.floor(Math.random() * maxX);
+            
+            vowelElement.style.left = `${randomX}px`;
+            vowelElement.style.top = '-60px';
+            
+            elements.vowelsContainer.appendChild(vowelElement);
+            
+            gameState.vowels.push({
+                element: vowelElement,
+                letter: randomVowel,
+                x: randomX,
+                y: -60,
+                isRequired: isRequired
+            });
+        }
+        
+        // 开始生成元音
+        function startVowelSpawn() {
+            if (gameState.vowelSpawnInterval) {
+                clearInterval(gameState.vowelSpawnInterval);
+            }
+            
+            gameState.vowelSpawnInterval = setInterval(() => {
+                if (gameState.isPlaying) {
+                    spawnVowel();
+                }
+            }, GAME_CONFIG.vowelSpawnRate);
+        }
+        
+        // 游戏主循环
+        function startGameLoop() {
+            if (gameState.gameInterval) {
+                cancelAnimationFrame(gameState.gameInterval);
+            }
+            
+            function gameLoop() {
+                if (gameState.isPlaying) {
+                    updateVowels();
+                    checkCollisions();
+                    gameState.gameInterval = requestAnimationFrame(gameLoop);
+                }
+            }
+            
+            gameState.gameInterval = requestAnimationFrame(gameLoop);
+        }
+        
+        // 更新元音位置
+        function updateVowels() {
+            for (let i = gameState.vowels.length - 1; i >= 0; i--) {
+                const vowel = gameState.vowels[i];
+                vowel.y += GAME_CONFIG.vowelSpeed;
+                vowel.element.style.top = `${vowel.y}px`;
+                
+                // 移除超出屏幕的元音
+                if (vowel.y > elements.vowelsContainer.offsetHeight) {
+                    vowel.element.remove();
+                    gameState.vowels.splice(i, 1);
+                }
+            }
+        }
+        
+        // 检测碰撞
+        function checkCollisions() {
+            if (gameState.isTransitioning || !gameState.wordElement || 
+                gameState.currentVowelIndex >= gameState.requiredVowels.length) {
+                return;
+            }
+            
+            const wordRect = gameState.wordElement.getBoundingClientRect();
+            const gameRect = elements.gameScreen.getBoundingClientRect();
+            
+            const wordX = wordRect.left - gameRect.left;
+            const wordY = wordRect.top - gameRect.top;
+            const wordWidth = wordRect.width;
+            const wordHeight = wordRect.height;
+            
+            for (let i = gameState.vowels.length - 1; i >= 0; i--) {
+                const vowel = gameState.vowels[i];
+                const vowelRect = vowel.element.getBoundingClientRect();
+                
+                // 检查是否碰撞
+                if (
+                    vowel.x < wordX + wordWidth &&
+                    vowel.x + vowelRect.width > wordX &&
+                    vowel.y < wordY + wordHeight &&
+                    vowel.y + vowelRect.height > wordY
+                ) {
+                    // 获取碰撞位置用于反馈
+                    const feedbackX = vowel.x + vowelRect.width / 2;
+                    const feedbackY = vowel.y;
+                    
+                    // 移除元音
+                    vowel.element.remove();
+                    gameState.vowels.splice(i, 1);
+                    
+                    // 检查是否是当前需要的元音
+                    if (vowel.letter === gameState.requiredVowels[gameState.currentVowelIndex]) {
+                        // 正确的元音
+                        createFeedback('+10', true, feedbackX, feedbackY);
+                        playSound(elements.coinSound); // 播放金币音效
+                        completeVowel();
+                    } else {
+                        // 错误的元音
+                        createFeedback('X', false, feedbackX, feedbackY);
+                        playSound(elements.wrongSound);
+                    }
+                    
+                    break;
+                }
+            }
+        }
+        
+        // 补全元音
+        function completeVowel() {
+            // 安全检查
+            if (gameState.currentVowelIndex >= gameState.requiredVowels.length) {
+                loadNextWord();
+                return;
+            }
+            
+            let updatedWord = gameState.currentWord.current;
+            let starIndex = -1;
+            let count = 0;
+            
+            // 找到当前需要替换的*的位置
+            for (let i = 0; i < updatedWord.length; i++) {
+                if (updatedWord[i] === '*') {
+                    count++;
+                    if (count === gameState.currentVowelIndex + 1) {
+                        starIndex = i;
+                        break;
+                    }
+                }
+            }
+            
+            // 安全检查：如果没有找到星号但应该有
+            if (starIndex === -1 && gameState.currentVowelIndex < gameState.requiredVowels.length) {
+                // 强制进入下一个元音
+                gameState.currentVowelIndex++;
+                
+                // 如果已经是最后一个元音，进入下一个单词
+                if (gameState.currentVowelIndex >= gameState.requiredVowels.length) {
+                    incrementScore();
+                    playSound(elements.correctSound);
+                    setTimeout(() => {
+                        loadNextWord();
+                    }, 800);
+                }
+                return;
+            }
+            
+            // 替换找到的*
+            if (starIndex !== -1) {
+                const vowelToAdd = gameState.requiredVowels[gameState.currentVowelIndex].toUpperCase();
+                updatedWord = updatedWord.substring(0, starIndex) + 
+                              vowelToAdd + 
+                              updatedWord.substring(starIndex + 1);
+                
+                gameState.currentWord.current = updatedWord;
+                updateWordDisplay();
+                
+                // 检查是否补全了所有元音
+                gameState.currentVowelIndex++;
+                
+                // 所有元音都补全后，自动切换到下一个单词
+                if (gameState.currentVowelIndex >= gameState.requiredVowels.length) {
+                    incrementScore();
+                    playSound(elements.correctSound);
+                    gameState.wordElement.classList.add('bg-green-500/50');
+                    setTimeout(() => {
+                        gameState.wordElement.classList.remove('bg-green-500/50');
+                        loadNextWord();
+                    }, 800);
+                }
+            }
+        }
+        
+        // 增加分数
+        function incrementScore() {
+            gameState.score += 10;
+            elements.scoreDisplay.textContent = gameState.score;
+            
+            // 分数动画
+            elements.scoreDisplay.classList.add('text-nautical-accent', 'scale-150');
+            setTimeout(() => {
+                elements.scoreDisplay.classList.remove('text-nautical-accent', 'scale-150');
+            }, 300);
+        }
+        
+        // 计时器
+        function startTimer() {
+            if (gameState.timerInterval) {
+                clearInterval(gameState.timerInterval);
+            }
+            
+            gameState.timerInterval = setInterval(() => {
+                gameState.timeRemaining--;
+                elements.timerDisplay.textContent = gameState.timeRemaining;
+                
+                if (gameState.timeRemaining <= 0) {
+                    endGame();
+                }
+                
+                // 最后15秒警告效果
+                if (gameState.timeRemaining <= 15) {
+                    elements.timerDisplay.classList.add('text-red-500');
+                    elements.timerDisplay.classList.toggle('scale-110', gameState.timeRemaining % 2 === 0);
+                }
+            }, 1000);
+        }
+        
+        // 结束游戏
+        function endGame() {
+            gameState.isPlaying = false;
+            
+            // 暂停背景音乐
+            elements.bgMusic.pause();
+            
+            // 清除所有间隔和循环
+            if (gameState.gameInterval) cancelAnimationFrame(gameState.gameInterval);
+            if (gameState.vowelSpawnInterval) clearInterval(gameState.vowelSpawnInterval);
+            if (gameState.timerInterval) clearInterval(gameState.timerInterval);
+            
+            // 更新最终分数
+            elements.finalScoreDisplay.textContent = gameState.score;
+            
+            // 显示结束界面
+            elements.gameScreen.classList.add('hidden');
+            elements.endScreen.classList.remove('hidden');
+        }
+        
+        // 鼠标控制单词/船只
+        function handleMouseMove(e) {
+            if (gameState.isPlaying && !gameState.isTransitioning && gameState.wordElement) {
+                const gameRect = elements.gameScreen.getBoundingClientRect();
+                const wordWidth = gameState.wordElement.offsetWidth;
+                
+                let newX = e.clientX - gameRect.left - (wordWidth / 2);
+                newX = Math.max(0, Math.min(newX, gameRect.width - wordWidth));
+                
+                gameState.wordElement.style.position = 'absolute';
+                gameState.wordElement.style.left = `${newX}px`;
+            }
+        }
+        
+        // 触摸控制
+        function handleTouchMove(e) {
+            e.preventDefault();
+            if (gameState.isPlaying && !gameState.isTransitioning && gameState.wordElement && e.touches.length > 0) {
+                const gameRect = elements.gameScreen.getBoundingClientRect();
+                const wordWidth = gameState.wordElement.offsetWidth;
+                
+                let newX = e.touches[0].clientX - gameRect.left - (wordWidth / 2);
+                newX = Math.max(0, Math.min(newX, gameRect.width - wordWidth));
+                
+                gameState.wordElement.style.position = 'absolute';
+                gameState.wordElement.style.left = `${newX}px`;
+            }
+        }
+        
+        // 事件监听
+        elements.startBtn.addEventListener('click', () => {
+            elements.startScreen.classList.add('hidden');
+            elements.gameScreen.classList.remove('hidden');
+            initGame();
+        });
+        
+        elements.restartBtn.addEventListener('click', () => {
+            elements.endScreen.classList.add('hidden');
+            elements.gameScreen.classList.remove('hidden');
+            initGame();
+        });
+        
+        elements.toggleMusicBtn.addEventListener('click', toggleMusic);
+        
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    </script>
+</body>
+</html>
+    

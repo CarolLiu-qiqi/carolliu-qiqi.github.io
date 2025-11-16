@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unit 7 Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4F46E5',
+                        secondary: '#818CF8',
+                        accent: '#EC4899',
+                        snow: '#F0F9FF',
+                        vowel: {
+                            a: '#34D399',
+                            e: '#FBBF24',
+                            i: '#60A5FA',
+                            o: '#F97316',
+                            u: '#EC4899'
+                        }
+                    },
+                    fontFamily: {
+                        game: ['"Comic Sans MS"', 'cursive', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .game-shadow {
+                box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+            }
+            .text-shadow {
+                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            }
+            .snow-bg {
+                background-image: 
+                    radial-gradient(circle, #fff 1px, transparent 1px),
+                    radial-gradient(circle, #fff 1px, transparent 1px);
+                background-size: 50px 50px;
+                background-position: 0 0, 25px 25px;
+            }
+            .vowel-glow {
+                filter: drop-shadow(0 0 8px currentColor);
+            }
+            .hint-btn {
+                transition: all 0.3s ease;
+            }
+            .hint-btn:hover {
+                transform: scale(1.05);
+            }
+            .pronunciation-indicator {
+                animation: pulse 1.5s infinite;
+            }
+            .control-btn {
+                transition: all 0.2s ease;
+            }
+            .control-btn:hover {
+                transform: scale(1.1);
+            }
+            @keyframes pulse {
+                0% { opacity: 0.6; }
+                50% { opacity: 1; }
+                100% { opacity: 0.6; }
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+    <!-- 游戏界面保持为原来的75% -->
+    <div class="max-w-3xl w-full mx-auto">
+        <!-- 游戏标题 -->
+        <h1 class="text-[clamp(1.5rem,3vw,2.5rem)] font-game text-primary text-center mb-4 text-shadow">
+            <i class="fa fa-book mr-2"></i>Unit 7 Game<i class="fa fa-book ml-2"></i>
+        </h1>
+        
+        <!-- 游戏容器 -->
+        <div class="relative bg-blue-50 rounded-xl overflow-hidden game-shadow">
+            <!-- 游戏信息面板 -->
+            <div class="bg-primary/80 text-white p-3 flex justify-between items-center flex-wrap gap-2">
+                <div class="flex items-center gap-2">
+                    <i class="fa fa-star text-yellow-300"></i>
+                    <span>得分: <span id="score" class="font-bold">0</span></span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <i class="fa fa-clock-o"></i>
+                    <span>剩余时间: <span id="timeLeft" class="font-bold">5:00</span></span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <i class="fa fa-volume-up"></i>
+                    <button id="soundToggle" class="bg-white/20 text-white px-2 py-1 rounded hover:bg-white/30 transition-colors text-sm">
+                        关闭声音
+                    </button>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span>当前单词: </span>
+                    <span id="currentWord" class="font-bold px-2 py-1 bg-white/20 rounded"></span>
+                </div>
+                <div class="flex gap-2">
+                    <button id="startBtn" class="bg-white text-primary px-3 py-1 rounded font-bold hover:bg-gray-200 transition-colors">
+                        开始
+                    </button>
+                    <!-- 暂停和继续按钮 -->
+                    <button id="pauseBtn" class="bg-orange-500 text-white px-3 py-1 rounded font-bold hover:bg-orange-600 transition-colors hidden control-btn">
+                        <i class="fa fa-pause mr-1"></i>暂停
+                    </button>
+                    <button id="continueBtn" class="bg-green-500 text-white px-3 py-1 rounded font-bold hover:bg-green-600 transition-colors hidden control-btn">
+                        <i class="fa fa-play mr-1"></i>继续
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 单词显示区 -->
+            <div class="bg-primary/20 p-3 text-center">
+                <div id="wordDisplay" class="text-xl md:text-2xl font-bold text-primary">
+                    <!-- 单词会在这里显示，只隐藏元音字母 -->
+                </div>
+                <div id="wordPronunciation" class="text-sm text-gray-600 mt-1 italic">
+                    <!-- 单词发音会在这里显示 -->
+                </div>
+                <!-- 发音提示指示器 -->
+                <div id="pronunciationIndicator" class="hidden mt-1">
+                    <i class="fa fa-volume-up text-blue-500 pronunciation-indicator"></i>
+                    <span class="text-xs text-blue-500 ml-1">正在播放发音提示</span>
+                </div>
+                <!-- 提示区域：包含提示按钮和提示内容 -->
+                <div class="mt-2 flex justify-center items-center gap-2">
+                    <button id="hintButton" class="hint-btn bg-primary/20 text-primary px-3 py-1 rounded text-sm flex items-center">
+                        <i class="fa fa-lightbulb-o mr-1"></i> 提示
+                    </button>
+                    <div id="nextVowelHint" class="text-sm text-green-600 hidden">
+                        <!-- 下一个需要的元音提示，默认隐藏 -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 游戏画布 -->
+            <canvas id="gameCanvas" class="w-full bg-blue-100 snow-bg"></canvas>
+            
+            <!-- 游戏说明 -->
+            <div class="bg-primary/80 text-white p-3 text-sm">
+                <div class="flex flex-wrap gap-x-6 gap-y-2">
+                    <div><i class="fa fa-arrow-left mr-1"></i> 左移</div>
+                    <div><i class="fa fa-arrow-right mr-1"></i> 右移</div>
+                    <div><i class="fa fa-arrow-up mr-1"></i> 上移</div>
+                    <div><i class="fa fa-arrow-down mr-1"></i> 下移</div>
+                    <div><i class="fa fa-pause mr-1"></i> P键: 暂停</div>
+                    <div><i class="fa fa-keyboard-o mr-1"></i> H键: 显示提示</div>
+                </div>
+                <div class="mt-2">
+                    <span class="inline-block w-5 h-5 rounded-full bg-vowel-a flex items-center justify-center text-white text-xs mr-1 vowel-glow">A</span> 
+                    <span class="inline-block w-5 h-5 rounded-full bg-vowel-e flex items-center justify-center text-white text-xs mr-1 vowel-glow">E</span>
+                    <span class="inline-block w-5 h-5 rounded-full bg-vowel-i flex items-center justify-center text-white text-xs mr-1 vowel-glow">I</span>
+                    <span class="inline-block w-5 h-5 rounded-full bg-vowel-o flex items-center justify-center text-white text-xs mr-1 vowel-glow">O</span>
+                    <span class="inline-block w-5 h-5 rounded-full bg-vowel-u flex items-center justify-center text-white text-xs mr-1 vowel-glow">U</span>
+                    <span>按顺序收集正确的元音字母补全单词（单词会自动发音提示）</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 游戏开始界面 -->
+        <div id="startScreen" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+            <div class="bg-white rounded-xl p-8 max-w-md w-full text-center">
+                <h2 class="text-2xl font-game text-primary mb-6">Unit 7 Game</h2>
+                <p class="mb-6 text-gray-700">控制滑雪者按顺序收集正确的元音字母来补全航海专业词汇！</p>
+                <ul class="text-left mb-6 space-y-2 text-gray-600">
+                    <li><i class="fa fa-check text-green-500 mr-2"></i>按顺序收集正确元音: +1分</li>
+                    <li><i class="fa fa-times text-red-500 mr-2"></i>收集错误元音: -1分</li>
+                    <li><i class="fa fa-volume-up text-blue-500 mr-2"></i>单词会自动连续发音直到补全</li>
+                    <li><i class="fa fa-lightbulb-o text-yellow-500 mr-2"></i>点击"提示"按钮或按H键查看需要的元音</li>
+                    <li><i class="fa fa-pause text-orange-500 mr-2"></i>点击"暂停"按钮或按P键暂停游戏</li>
+                    <li><i class="fa fa-clock-o text-purple-500 mr-2"></i>游戏时长: 5分钟</li>
+                </ul>
+                <button id="playBtn" class="bg-primary text-white px-6 py-3 rounded-full font-bold hover:bg-primary/80 transition-colors">
+                    开始游戏
+                </button>
+            </div>
+        </div>
+        
+        <!-- 游戏结束界面 -->
+        <div id="gameOverScreen" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden overflow-y-auto max-h-screen">
+            <div class="bg-white rounded-xl p-8 max-w-2xl w-full m-4 text-center">
+                <h2 class="text-2xl font-game text-red-500 mb-4">游戏结束</h2>
+                <p class="text-xl mb-6">最终得分: <span id="finalScore" class="font-bold">0</span></p>
+                
+                <div class="mb-6 text-left">
+                    <h3 class="text-lg font-bold mb-2 text-green-600">已完成的单词:</h3>
+                    <ul id="completedWords" class="list-disc list-inside space-y-1">
+                        <!-- 动态填充 -->
+                    </ul>
+                </div>
+                
+                <div class="mb-6 text-left">
+                    <h3 class="text-lg font-bold mb-2 text-red-600">未完成的单词:</h3>
+                    <ul id="uncompletedWords" class="list-disc list-inside space-y-1">
+                        <!-- 动态填充 -->
+                    </ul>
+                </div>
+                
+                <button id="restartBtn" class="bg-primary text-white px-6 py-3 rounded-full font-bold hover:bg-primary/80 transition-colors">
+                    再玩一次
+                </button>
+            </div>
+        </div>
+        
+        <!-- 暂停界面 -->
+        <div id="pauseScreen" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-xl p-8 max-w-md w-full text-center">
+                <h2 class="text-2xl font-game text-primary mb-6">游戏暂停</h2>
+                <button id="resumeBtn" class="bg-primary text-white px-6 py-3 rounded-full font-bold hover:bg-primary/80 transition-colors">
+                    <i class="fa fa-play mr-2"></i>继续游戏
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 背景音乐和音效 - 使用轻柔欢快的音乐 -->
+    <audio id="backgroundMusic" loop>
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3" type="audio/mpeg">
+    </audio>
+     
+    <audio id="correctSound">
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" type="audio/mpeg">
+    
+     
+    <audio id="wrongSound">
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" type="audio/mpeg">
+    </audio>
+     
+    <audio id="completeSound">
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3" type="audio/mpeg">
+    </audio>
+     
+    <audio id="hintSound">
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3" type="audio/mpeg">
+    
+
+    <script>
+        // 游戏主类
+        class Unit7Game {
+            constructor() {
+                // 元音字母集合
+                this.vowelsSet = new Set(['a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U']);
+                
+                // 游戏单词库 - 更新为新的航海专业词汇
+                this.wordBank = [
+                    { 
+                        word: "ballast water", 
+                        missingVowels: ["a", "a", "e", "a"], 
+                        pronunciation: "压载水"
+                    },
+                    { 
+                        word: "bilge", 
+                        missingVowels: ["i", "e"], 
+                        pronunciation: "/bɪldʒ/ n. 舱底，舱底水"
+                    },
+                    { 
+                        word: "black water", 
+                        missingVowels: ["a", "e", "a"], 
+                        pronunciation: "黑水"
+                    },
+                    { 
+                        word: "contaminating", 
+                        missingVowels: ["o", "a", "i", "a", "i"], 
+                        pronunciation: "/kənˈtæmɪneɪtɪŋ/ a. 污染性的"
+                    },
+                    { 
+                        word: "corrosive", 
+                        missingVowels: ["o", "o", "i", "e"], 
+                        pronunciation: "/kəˈrəʊsɪv/ a. 腐蚀（性）的；n. 腐蚀物"
+                    },
+                    { 
+                        word: "disposal", 
+                        missingVowels: ["i", "o", "a"], 
+                        pronunciation: "/dɪˈspəʊzl/ n. 处理，处置"
+                    },
+                    { 
+                        word: "dispose of", 
+                        missingVowels: ["i", "o", "e", "o"], 
+                        pronunciation: "处理，处置"
+                    },
+                    { 
+                        word: "domestic waste", 
+                        missingVowels: ["o", "e", "i", "a", "e"], 
+                        pronunciation: "生活垃圾"
+                    },
+                    { 
+                        word: "flammable", 
+                        missingVowels: ["a", "a", "e"], 
+                        pronunciation: "/ˈflæməbl/ a. 易燃的；n. 易燃物"
+                    },
+                    { 
+                        word: "general waste", 
+                        missingVowels: ["e", "e", "a", "e"], 
+                        pronunciation: "普通垃圾"
+                    },
+                    { 
+                        word: "grey water", 
+                        missingVowels: ["e", "a", "e"], 
+                        pronunciation: "灰水"
+                    },
+                    { 
+                        word: "hazardous", 
+                        missingVowels: ["a", "a", "o", "u"], 
+                        pronunciation: "/ˈhæzədəs/ a. 危险的"
+                    },
+                    { 
+                        word: "infectious", 
+                        missingVowels: ["i", "e", "i", "o", "u"], 
+                        pronunciation: "/ɪnˈfekʃəs/ a. 传染性的"
+                    },
+                    { 
+                        word: "irreclaimable", 
+                        missingVowels: ["i", "e", "a", "i", "a", "e"], 
+                        pronunciation: "/ˌɪrɪˈkleɪməbl/ a. 不可回收的"
+                    },
+                    { 
+                        word: "oil sludge", 
+                        missingVowels: ["o", "i", "u", "e"], 
+                        pronunciation: "油渣"
+                    },
+                    { 
+                        word: "oil/water separator", 
+                        missingVowels: ["o", "i", "a", "e", "e", "a", "o", "e"], 
+                        pronunciation: "油水分离器"
+                    },
+                    { 
+                        word: "oily water", 
+                        missingVowels: ["o", "i", "a", "e"], 
+                        pronunciation: "污油水"
+                    },
+                    { 
+                        word: "operational waste", 
+                        missingVowels: ["e", "a", "i", "o", "a", "e"], 
+                        pronunciation: "工作垃圾"
+                    },
+                    { 
+                        word: "oxidizing", 
+                        missingVowels: ["o", "i", "i"], 
+                        pronunciation: "/ˈɒksɪdaɪzɪŋ/ a. 氧化的"
+                    },
+                    { 
+                        word: "pier", 
+                        missingVowels: ["i", "e"], 
+                        pronunciation: "/pɪə/ n. 码头"
+                    },
+                    { 
+                        word: "radioactive", 
+                        missingVowels: ["a", "i", "o", "a", "i", "e"], 
+                        pronunciation: "/ˌreɪdiəʊˈæktɪv/ a. 放射性的"
+                    },
+                    { 
+                        word: "reclaimable", 
+                        missingVowels: ["e", "a", "i", "a", "e"], 
+                        pronunciation: "/rɪˈkleɪməbl/ a. 可回收的"
+                    },
+                    { 
+                        word: "retain", 
+                        missingVowels: ["e", "a", "i"], 
+                        pronunciation: "/rɪˈteɪn/ vt. 保持，保留"
+                    },
+                    { 
+                        word: "sewage", 
+                        missingVowels: ["e", "a", "e"], 
+                        pronunciation: "/ˈsuːɪdʒ/ n. 污水"
+                    },
+                    { 
+                        word: "solid waste", 
+                        missingVowels: ["o", "i", "a", "e"], 
+                        pronunciation: "固体垃圾"
+                    },
+                    { 
+                        word: "surveillance", 
+                        missingVowels: ["u", "e", "i", "a", "e"], 
+                        pronunciation: "/sɜːˈveɪləns/ n. 监视，监督"
+                    },
+                    { 
+                        word: "toxic", 
+                        missingVowels: ["o", "i"], 
+                        pronunciation: "/ˈtɒksɪk/ a. 有毒的；中毒的；n.有毒物"
+                    },
+                    { 
+                        word: "transfer", 
+                        missingVowels: ["a", "e", "e"], 
+                        pronunciation: "/ˈtrænsfɜː(r)/ n. v. 转移，转运"
+                    }
+                ];
+                
+                // 验证单词库只包含元音缺失
+                this.validateWordBank();
+                
+                // 获取画布和上下文
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                
+                // 获取提示按钮和提示区域
+                this.hintButton = document.getElementById('hintButton');
+                this.nextVowelHint = document.getElementById('nextVowelHint');
+                this.pronunciationIndicator = document.getElementById('pronunciationIndicator');
+                
+                // 获取暂停和继续按钮
+                this.pauseBtn = document.getElementById('pauseBtn');
+                this.continueBtn = document.getElementById('continueBtn');
+                
+                // 发音相关变量
+                this.pronunciationInterval = null;
+                this.currentUtterance = null;
+                
+                // 设置画布尺寸
+                this.resizeCanvas();
+                window.addEventListener('resize', () => this.resizeCanvas());
+                
+                // 音频元素
+                this.audio = {
+                    background: document.getElementById('backgroundMusic'),
+                    correct: document.getElementById('correctSound'),
+                    wrong: document.getElementById('wrongSound'),
+                    complete: document.getElementById('completeSound'),
+                    hint: document.getElementById('hintSound')
+                };
+                this.soundEnabled = true;
+                
+                // 游戏状态
+                this.gameState = 'ready'; // ready, playing, paused, gameOver
+                this.score = 0;
+                this.words = []; // 当前活动的单词
+                this.currentWordIndex = 0;
+                this.completedWords = [];
+                this.uncompletedWords = [];
+                
+                // 滑雪者属性
+                this.skier = {
+                    x: this.canvas.width / 2,
+                    y: this.canvas.height - 100,
+                    width: 30,
+                    height: 50,
+                    speed: 5,
+                    color: '#FF9800'
+                };
+                
+                // 游戏元素数组
+                this.vowels = []; // 元音字母
+                this.particles = []; // 粒子效果
+                
+                // 游戏设置
+                this.vowelSpawnRate = 40; // 每40帧生成一个元音
+                this.scrollSpeed = 3; // 背景滚动速度
+                this.currentSpawnTimer = 0;
+                this.gameDuration = 300000; // 游戏时长 5分钟(毫秒)
+                this.countdownTimer = null;
+                this.remainingTime = this.gameDuration;
+                
+                // 控制状态
+                this.keys = {
+                    left: false,
+                    right: false,
+                    up: false,
+                    down: false,
+                    pause: false
+                };
+                
+                // 绑定事件监听
+                this.bindEvents();
+                
+                // 初始化单词
+                this.initializeWords();
+                
+                // 游戏循环
+                this.lastTime = 0;
+                requestAnimationFrame((timestamp) => this.gameLoop(timestamp));
+            }
+            
+            // 验证单词库只缺失元音
+            validateWordBank() {
+                this.wordBank.forEach(wordObj => {
+                    // 检查缺失的是否都是元音
+                    wordObj.missingVowels.forEach(vowel => {
+                        if (!this.vowelsSet.has(vowel)) {
+                            console.warn(`单词 ${wordObj.word} 包含非元音缺失: ${vowel}`);
+                        }
+                    });
+                    
+                    // 自动识别所有元音位置
+                    wordObj.vowelPositions = [];
+                    const letters = wordObj.word.split('');
+                    letters.forEach((letter, index) => {
+                        if (this.vowelsSet.has(letter)) {
+                            wordObj.vowelPositions.push(index);
+                        }
+                    });
+                    
+                    // 验证缺失元音数量与单词中实际元音数量是否一致
+                    if (wordObj.missingVowels.length !== wordObj.vowelPositions.length) {
+                        console.warn(`单词 ${wordObj.word} 缺失元音数量与实际元音数量不符`);
+                    }
+                });
+            }
+            
+            // 初始化单词列表
+            initializeWords() {
+                // 复制并打乱单词库 - 确保每次游戏单词顺序随机
+                this.words = [...this.wordBank];
+                this.shuffleArray(this.words);
+                
+                // 设置当前单词
+                this.setCurrentWord();
+            }
+            
+            // 打乱数组顺序
+            shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+            }
+            
+            // 设置当前单词
+            setCurrentWord() {
+                // 停止上一个单词的发音
+                this.stopWordPronunciation();
+                
+                if (this.currentWordIndex < this.words.length) {
+                    this.currentWord = this.words[this.currentWordIndex];
+                    this.currentWord.userInput = []; // 存储用户输入的元音，必须按顺序
+                    document.getElementById('currentWord').textContent = this.getMaskedWord(this.currentWord);
+                    document.getElementById('wordDisplay').textContent = this.getMaskedWord(this.currentWord);
+                    document.getElementById('wordPronunciation').textContent = this.currentWord.pronunciation;
+                    
+                    // 默认隐藏提示
+                    this.nextVowelHint.classList.add('hidden');
+                    
+                    // 开始自动连续播放单词发音
+                    this.startAutoPronunciation();
+                    
+                    // 为单词显示区添加点击发音事件
+                    document.getElementById('wordDisplay').onclick = () => {
+                        this.playWordPronunciation(this.currentWord.word);
+                    };
+                } else {
+                    // 所有单词都处理完毕
+                    this.endGame();
+                }
+            }
+            
+            // 开始自动连续播放单词发音
+            startAutoPronunciation() {
+                if (this.gameState !== 'playing' || !this.currentWord) return;
+                
+                // 显示发音指示器
+                this.pronunciationIndicator.classList.remove('hidden');
+                
+                // 立即播放一次
+                this.playWordPronunciation(this.currentWord.word);
+                
+                // 设置定时器，每5秒播放一次
+                this.pronunciationInterval = setInterval(() => {
+                    if (this.gameState === 'playing' && this.soundEnabled) {
+                        this.playWordPronunciation(this.currentWord.word);
+                    }
+                }, 5000);
+            }
+            
+            // 停止单词发音
+            stopWordPronunciation() {
+                // 取消当前正在播放的语音
+                if (this.currentUtterance) {
+                    speechSynthesis.cancel();
+                    this.currentUtterance = null;
+                }
+                
+                // 清除发音定时器
+                if (this.pronunciationInterval) {
+                    clearInterval(this.pronunciationInterval);
+                    this.pronunciationInterval = null;
+                }
+                
+                // 隐藏发音指示器
+                this.pronunciationIndicator.classList.add('hidden');
+            }
+            
+            // 显示下一个需要的元音提示（点击触发）
+            showNextVowelHint() {
+                const nextIndex = this.currentWord.userInput.length;
+                
+                if (nextIndex < this.currentWord.missingVowels.length) {
+                    const nextVowel = this.currentWord.missingVowels[nextIndex].toUpperCase();
+                    let colorClass = '';
+                    
+                    // 根据元音设置颜色
+                    switch(nextVowel) {
+                        case 'A': colorClass = 'text-vowel-a'; break;
+                        case 'E': colorClass = 'text-vowel-e'; break;
+                        case 'I': colorClass = 'text-vowel-i'; break;
+                        case 'O': colorClass = 'text-vowel-o'; break;
+                        case 'U': colorClass = 'text-vowel-u'; break;
+                    }
+                    
+                    this.nextVowelHint.innerHTML = `下一个需要的元音: <span class="${colorClass} font-bold">${nextVowel}</span>`;
+                    this.nextVowelHint.classList.remove('hidden');
+                    
+                    // 播放提示音效
+                    if (this.soundEnabled) {
+                        this.audio.hint.currentTime = 0;
+                        this.audio.hint.play();
+                    }
+                } else {
+                    this.nextVowelHint.textContent = '单词已完成！';
+                    this.nextVowelHint.classList.remove('hidden');
+                }
+            }
+            
+            // 获取带掩码的单词（只隐藏元音字母，显示所有辅音字母）
+            getMaskedWord(wordObj) {
+                const letters = wordObj.word.split('');
+                
+                // 只隐藏元音字母，显示所有辅音字母
+                letters.forEach((letter, index) => {
+                    // 检查该位置是否是元音
+                    if (this.vowelsSet.has(letter)) {
+                        // 找到这个元音在缺失元音数组中的索引
+                        const vowelIndex = wordObj.vowelPositions.indexOf(index);
+                        // 如果用户已经输入了该元音，显示输入的内容，否则显示下划线
+                        letters[index] = wordObj.userInput[vowelIndex] || '_';
+                    }
+                    // 辅音字母保持不变，直接显示
+                });
+                
+                return letters.join(' ');
+            }
+            
+            // 播放单词发音
+            playWordPronunciation(word) {
+                if (!this.soundEnabled) return;
+                
+                // 取消当前可能正在播放的语音
+                speechSynthesis.cancel();
+                
+                // 使用Web Speech API发音
+                this.currentUtterance = new SpeechSynthesisUtterance(word);
+                this.currentUtterance.lang = 'en-US';
+                this.currentUtterance.rate = 0.9; // 稍慢一点，便于听清
+                speechSynthesis.speak(this.currentUtterance);
+            }
+            
+            // 调整画布尺寸 - 保持合适比例同时整体缩小
+            resizeCanvas() {
+                // 保持4:3的宽高比，同时整体尺寸为原来的75%
+                const containerWidth = this.canvas.parentElement.clientWidth * 0.75;
+                this.canvas.width = containerWidth;
+                this.canvas.height = Math.floor(containerWidth * 3 / 4);
+                
+                // 重新定位滑雪者
+                if (this.gameState === 'playing') {
+                    this.skier.x = this.canvas.width / 2;
+                    this.skier.y = this.canvas.height - 100;
+                }
+            }
+            
+            // 格式化剩余时间显示
+            formatTime(ms) {
+                const minutes = Math.floor(ms / 60000);
+                const seconds = Math.floor((ms % 60000) / 1000);
+                return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            }
+            
+            // 开始倒计时
+            startCountdown() {
+                this.updateCountdown(); // 立即更新一次
+                this.countdownTimer = setInterval(() => {
+                    if (this.gameState === 'playing') {
+                        this.remainingTime -= 1000;
+                        this.updateCountdown();
+                        
+                        if (this.remainingTime <= 0) {
+                            clearInterval(this.countdownTimer);
+                            this.endGame();
+                        }
+                    }
+                }, 1000);
+            }
+            
+            // 更新倒计时显示
+            updateCountdown() {
+                document.getElementById('timeLeft').textContent = this.formatTime(this.remainingTime);
+            }
+            
+            // 绑定事件
+            bindEvents() {
+                // 键盘控制
+                window.addEventListener('keydown', (e) => {
+                    switch(e.key) {
+                        case 'ArrowLeft':
+                            this.keys.left = true;
+                            break;
+                        case 'ArrowRight':
+                            this.keys.right = true;
+                            break;
+                        case 'ArrowUp':
+                            this.keys.up = true;
+                            break;
+                        case 'ArrowDown':
+                            this.keys.down = true;
+                            break;
+                        case 'p':
+                        case 'P':
+                            this.keys.pause = true;
+                            if (this.gameState === 'playing') {
+                                this.pauseGame();
+                            } else if (this.gameState === 'paused') {
+                                this.resumeGame();
+                            }
+                            break;
+                        // 显示提示快捷键
+                        case 'h':
+                        case 'H':
+                            if (this.gameState === 'playing') {
+                                this.showNextVowelHint();
+                            }
+                            break;
+                    }
+                });
+                
+                window.addEventListener('keyup', (e) => {
+                    switch(e.key) {
+                        case 'ArrowLeft':
+                            this.keys.left = false;
+                            break;
+                        case 'ArrowRight':
+                            this.keys.right = false;
+                            break;
+                        case 'ArrowUp':
+                            this.keys.up = false;
+                            break;
+                        case 'ArrowDown':
+                            this.keys.down = false;
+                            break;
+                        case 'p':
+                        case 'P':
+                            this.keys.pause = false;
+                            break;
+                    }
+                });
+                
+                // 按钮控制
+                document.getElementById('startBtn').addEventListener('click', () => this.startGame());
+                document.getElementById('playBtn').addEventListener('click', () => this.startGame());
+                document.getElementById('restartBtn').addEventListener('click', () => this.restartGame());
+                document.getElementById('resumeBtn').addEventListener('click', () => this.resumeGame());
+                document.getElementById('soundToggle').addEventListener('click', () => this.toggleSound());
+                document.getElementById('hintButton').addEventListener('click', () => {
+                    if (this.gameState === 'playing') {
+                        this.showNextVowelHint();
+                    }
+                });
+                
+                // 暂停和继续按钮事件
+                this.pauseBtn.addEventListener('click', () => this.pauseGame());
+                this.continueBtn.addEventListener('click', () => this.resumeGame());
+            }
+            
+            // 切换声音开关
+            toggleSound() {
+                this.soundEnabled = !this.soundEnabled;
+                const soundBtn = document.getElementById('soundToggle');
+                
+                if (this.soundEnabled) {
+                    soundBtn.textContent = '关闭声音';
+                    if (this.gameState === 'playing') {
+                        this.audio.background.play();
+                        // 如果正在播放单词，恢复
+                        this.startAutoPronunciation();
+                    }
+                } else {
+                    soundBtn.textContent = '开启声音';
+                    this.audio.background.pause();
+                    // 停止单词发音
+                    this.stopWordPronunciation();
+                }
+            }
+            
+            // 开始游戏
+            startGame() {
+                this.gameState = 'playing';
+                document.getElementById('startScreen').classList.add('hidden');
+                document.getElementById('gameOverScreen').classList.add('hidden');
+                document.getElementById('pauseScreen').classList.add('hidden');
+                
+                // 显示暂停按钮，隐藏继续按钮和开始按钮
+                this.pauseBtn.classList.remove('hidden');
+                this.continueBtn.classList.add('hidden');
+                document.getElementById('startBtn').classList.add('hidden');
+                
+                // 重置游戏状态
+                this.resetGame();
+                
+                // 播放背景音乐
+                if (this.soundEnabled) {
+                    this.audio.background.currentTime = 0;
+                    this.audio.background.play();
+                }
+                
+                // 开始倒计时
+                this.startCountdown();
+            }
+            
+            // 重置游戏
+            resetGame() {
+                this.score = 0;
+                this.currentWordIndex = 0;
+                this.completedWords = [];
+                this.uncompletedWords = [];
+                this.vowels = [];
+                this.particles = [];
+                this.remainingTime = this.gameDuration;
+                
+                // 清除计时器
+                if (this.countdownTimer) {
+                    clearInterval(this.countdownTimer);
+                }
+                
+                // 停止任何正在进行的发音
+                this.stopWordPronunciation();
+                
+                // 重新初始化单词（随机顺序）
+                this.initializeWords();
+                
+                // 重新定位滑雪者
+                this.skier.x = this.canvas.width / 2;
+                this.skier.y = this.canvas.height - 100;
+                
+                // 更新UI
+                document.getElementById('score').textContent = this.score;
+                this.updateCountdown();
+            }
+            
+            // 暂停游戏
+            pauseGame() {
+                if (this.gameState === 'playing') {
+                    this.gameState = 'paused';
+                    document.getElementById('pauseScreen').classList.remove('hidden');
+                    this.audio.background.pause();
+                    
+                    // 暂停单词发音
+                    this.stopWordPronunciation();
+                    
+                    // 暂停倒计时
+                    clearInterval(this.countdownTimer);
+                    
+                    // 显示继续按钮，隐藏暂停按钮
+                    this.pauseBtn.classList.add('hidden');
+                    this.continueBtn.classList.remove('hidden');
+                }
+            }
+            
+            // 恢复游戏
+            resumeGame() {
+                if (this.gameState === 'paused') {
+                    this.gameState = 'playing';
+                    document.getElementById('pauseScreen').classList.add('hidden');
+                    
+                    if (this.soundEnabled) {
+                        this.audio.background.play();
+                        // 恢复单词发音
+                        this.startAutoPronunciation();
+                    }
+                    
+                    // 恢复倒计时
+                    this.startCountdown();
+                    
+                    // 显示暂停按钮，隐藏继续按钮
+                    this.pauseBtn.classList.remove('hidden');
+                    this.continueBtn.classList.add('hidden');
+                }
+            }
+            
+            // 重新开始游戏
+            restartGame() {
+                document.getElementById('gameOverScreen').classList.add('hidden');
+                this.startGame();
+            }
+            
+            // 结束游戏
+            endGame() {
+                this.gameState = 'gameOver';
+                this.audio.background.pause();
+                clearInterval(this.countdownTimer);
+                
+                // 停止单词发音
+                this.stopWordPronunciation();
+                
+                // 显示开始按钮，隐藏暂停和继续按钮
+                this.pauseBtn.classList.add('hidden');
+                this.continueBtn.classList.add('hidden');
+                document.getElementById('startBtn').classList.remove('hidden');
+                
+                // 收集未完成的单词
+                for (let i = this.currentWordIndex; i < this.words.length; i++) {
+                    this.uncompletedWords.push(this.words[i].word);
+                }
+                
+                // 如果当前单词未完成，也加入未完成列表
+                if (this.currentWord && this.currentWord.userInput.length < this.currentWord.missingVowels.length) {
+                    this.uncompletedWords.push(this.currentWord.word);
+                }
+                
+                // 更新游戏结束界面
+                document.getElementById('finalScore').textContent = this.score;
+                
+                // 显示已完成的单词
+                const completedList = document.getElementById('completedWords');
+                completedList.innerHTML = '';
+                if (this.completedWords.length > 0) {
+                    this.completedWords.forEach(word => {
+                        const li = document.createElement('li');
+                        li.textContent = word;
+                        completedList.appendChild(li);
+                    });
+                } else {
+                    completedList.innerHTML = '<li>无</li>';
+                }
+                
+                // 显示未完成的单词
+                const uncompletedList = document.getElementById('uncompletedWords');
+                uncompletedList.innerHTML = '';
+                if (this.uncompletedWords.length > 0) {
+                    this.uncompletedWords.forEach(word => {
+                        const li = document.createElement('li');
+                        li.textContent = word;
+                        uncompletedList.appendChild(li);
+                    });
+                } else {
+                    uncompletedList.innerHTML = '<li>无</li>';
+                }
+                
+                document.getElementById('gameOverScreen').classList.remove('hidden');
+            }
+            
+            // 检查当前单词是否完成 - 不显示提示，直接进入下一个单词
+            checkWordCompletion() {
+                if (this.currentWord.userInput.length === this.currentWord.missingVowels.length) {
+                    // 检查是否所有输入都按顺序正确
+                    const allCorrect = this.currentWord.userInput.every((vowel, index) => {
+                        return vowel === this.currentWord.missingVowels[index];
+                    });
+                    
+                    // 播放完成音效
+                    if (this.soundEnabled && allCorrect) {
+                        this.audio.complete.play();
+                    }
+                    
+                    // 添加到已完成列表
+                    this.completedWords.push(this.currentWord.word);
+                    
+                    // 停止当前单词发音
+                    this.stopWordPronunciation();
+                    
+                    // 立即进入下一个单词
+                    this.currentWordIndex++;
+                    this.setCurrentWord();
+                }
+            }
+            
+            // 更新滑雪者位置
+            updateSkier() {
+                // 移动控制
+                if (this.keys.left && this.skier.x > 0) {
+                    this.skier.x -= this.skier.speed;
+                }
+                if (this.keys.right && this.skier.x < this.canvas.width - this.skier.width) {
+                    this.skier.x += this.skier.speed;
+                }
+                if (this.keys.up && this.skier.y > 0) {
+                    this.skier.y -= this.skier.speed;
+                }
+                if (this.keys.down && this.skier.y < this.canvas.height - this.skier.height) {
+                    this.skier.y += this.skier.speed;
+                }
+            }
+            
+            // 生成元音字母
+            spawnVowels() {
+                this.currentSpawnTimer++;
+                
+                if (this.currentSpawnTimer % this.vowelSpawnRate === 0) {
+                    // 元音字母及其颜色映射
+                    const vowels = [
+                        { letter: 'a', color: 'bg-vowel-a' },
+                        { letter: 'e', color: 'bg-vowel-e' },
+                        { letter: 'i', color: 'bg-vowel-i' },
+                        { letter: 'o', color: 'bg-vowel-o' },
+                        { letter: 'u', color: 'bg-vowel-u' }
+                    ];
+                    
+                    // 随机选择一个元音
+                    const vowel = vowels[Math.floor(Math.random() * vowels.length)];
+                    
+                    this.vowels.push({
+                        x: Math.random() * (this.canvas.width - 30),
+                        y: -30,
+                        width: 30,
+                        height: 30,
+                        letter: vowel.letter,
+                        color: vowel.color,
+                        // 只有当前需要的元音才是正确的
+                        isCorrect: this.isCorrectVowel(vowel.letter)
+                    });
+                }
+                
+                // 随时间增加难度
+                if (this.score > 0 && this.score % 20 === 0) {
+                    this.scrollSpeed = Math.min(6, 3 + Math.floor(this.score / 20) * 0.3);
+                    this.vowelSpawnRate = Math.max(20, 40 - Math.floor(this.score / 20) * 2);
+                }
+            }
+            
+            // 检查元音是否是当前需要的（按顺序）
+            isCorrectVowel(letter) {
+                const nextIndex = this.currentWord.userInput.length;
+                // 只有当前需要的下一个元音才是正确的
+                return nextIndex < this.currentWord.missingVowels.length && 
+                       letter === this.currentWord.missingVowels[nextIndex];
+            }
+            
+            // 更新元音字母
+            updateVowels() {
+                for (let i = this.vowels.length - 1; i >= 0; i--) {
+                    const vowel = this.vowels[i];
+                    vowel.y += this.scrollSpeed;
+                    
+                    // 移除超出屏幕的元音
+                    if (vowel.y > this.canvas.height) {
+                        this.vowels.splice(i, 1);
+                    }
+                }
+            }
+            
+            // 更新粒子效果
+            updateParticles() {
+                for (let i = this.particles.length - 1; i >= 0; i--) {
+                    const particle = this.particles[i];
+                    particle.y += particle.speedY;
+                    particle.x += particle.speedX;
+                    particle.alpha -= 0.05;
+                    
+                    // 移除消失的粒子
+                    if (particle.alpha <= 0) {
+                        this.particles.splice(i, 1);
+                    }
+                }
+            }
+            
+            // 检查碰撞 - 实现正确的计分方式
+            checkCollisions() {
+                // 滑雪者与元音字母碰撞
+                for (let i = this.vowels.length - 1; i >= 0; i--) {
+                    const vowel = this.vowels[i];
+                    
+                    if (this.isColliding(this.skier, vowel)) {
+                        this.vowels.splice(i, 1);
+                        
+                        // 创建碰撞粒子效果
+                        this.createParticles(
+                            vowel.x + vowel.width / 2, 
+                            vowel.y + vowel.height / 2, 
+                            vowel.isCorrect ? '#34D399' : '#EF4444'
+                        );
+                        
+                        // 处理正确元音（当前需要的下一个）
+                        if (vowel.isCorrect) {
+                            // 播放正确音效
+                            if (this.soundEnabled) {
+                                this.audio.correct.play();
+                            }
+                            
+                            // 加分：每填对一个元音得1分
+                            this.score++;
+                            
+                            // 将元音按顺序添加到当前单词的用户输入中
+                            const nextIndex = this.currentWord.userInput.length;
+                            if (nextIndex < this.currentWord.missingVowels.length) {
+                                this.currentWord.userInput.push(vowel.letter);
+                                
+                                // 更新单词显示
+                                document.getElementById('wordDisplay').textContent = this.getMaskedWord(this.currentWord);
+                                document.getElementById('currentWord').textContent = this.getMaskedWord(this.currentWord);
+                                
+                                // 隐藏提示（因为已经正确输入了元音）
+                                this.nextVowelHint.classList.add('hidden');
+                                
+                                // 检查单词是否完成
+                                this.checkWordCompletion();
+                            }
+                        } else {
+                            // 处理错误元音
+                            if (this.soundEnabled) {
+                                this.audio.wrong.play();
+                            }
+                            
+                            // 扣分：每填错一个元音扣1分（不低于0）
+                            this.score = Math.max(0, this.score - 1);
+                        }
+                        
+                        // 更新分数显示
+                        document.getElementById('score').textContent = this.score;
+                    }
+                }
+            }
+            
+            // 碰撞检测
+            isColliding(a, b) {
+                return a.x < b.x + b.width &&
+                       a.x + a.width > b.x &&
+                       a.y < b.y + b.height &&
+                       a.y + a.height > b.y;
+            }
+            
+            // 创建粒子效果
+            createParticles(x, y, color, count = 12) {
+                for (let i = 0; i < count; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = Math.random() * 3 + 1;
+                    
+                    this.particles.push({
+                        x: x,
+                        y: y,
+                        radius: Math.random() * 3 + 1,
+                        color: color,
+                        speedX: Math.cos(angle) * speed,
+                        speedY: Math.sin(angle) * speed,
+                        alpha: 1
+                    });
+                }
+            }
+            
+            // 绘制滑雪者
+            drawSkier() {
+                const ctx = this.ctx;
+                const s = this.skier;
+                
+                // 滑雪者身体
+                ctx.fillStyle = s.color;
+                ctx.beginPath();
+                ctx.arc(s.x + s.width / 2, s.y + s.height / 3, s.width / 3, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 滑雪者身体
+                ctx.fillStyle = s.color;
+                ctx.fillRect(s.x + s.width / 4, s.y + s.height / 2, s.width / 2, s.height / 3);
+                
+                // 滑雪板
+                ctx.fillStyle = '#374151';
+                ctx.fillRect(s.x, s.y + s.height - 5, s.width, 5);
+                
+                // 滑雪杖
+                ctx.strokeStyle = '#9CA3AF';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(s.x + s.width / 4, s.y + s.height / 2);
+                ctx.lineTo(s.x - s.width / 4, s.y + s.height);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.moveTo(s.x + s.width * 3 / 4, s.y + s.height / 2);
+                ctx.lineTo(s.x + s.width * 5 / 4, s.y + s.height);
+                ctx.stroke();
+            }
+            
+            // 绘制元音字母
+            drawVowels() {
+                for (const vowel of this.vowels) {
+                    // 绘制元音字母背景
+                    const colorClass = vowel.color;
+                    let color;
+                    
+                    // 映射颜色类到实际颜色值
+                    switch(colorClass) {
+                        case 'bg-vowel-a': color = '#34D399'; break;
+                        case 'bg-vowel-e': color = '#FBBF24'; break;
+                        case 'bg-vowel-i': color = '#60A5FA'; break;
+                        case 'bg-vowel-o': color = '#F97316'; break;
+                        case 'bg-vowel-u': color = '#EC4899'; break;
+                        default: color = '#6B7280';
+                    }
+                    
+                    // 绘制圆形背景
+                    this.ctx.fillStyle = color;
+                    this.ctx.beginPath();
+                    this.ctx.arc(vowel.x + vowel.width / 2, vowel.y + vowel.height / 2, vowel.width / 2, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    
+                    // 添加发光效果
+                    this.ctx.shadowColor = color;
+                    this.ctx.shadowBlur = 10;
+                    
+                    // 绘制字母
+                    this.ctx.fillStyle = 'white';
+                    this.ctx.font = 'bold 20px Arial';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.textBaseline = 'middle';
+                    this.ctx.fillText(vowel.letter.toUpperCase(), vowel.x + vowel.width / 2, vowel.y + vowel.height / 2);
+                    
+                    // 重置阴影
+                    this.ctx.shadowBlur = 0;
+                }
+            }
+            
+            // 绘制粒子效果
+            drawParticles() {
+                for (const particle of this.particles) {
+                    this.ctx.globalAlpha = particle.alpha;
+                    this.ctx.fillStyle = particle.color;
+                    this.ctx.beginPath();
+                    this.ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
+                    this.ctx.fill();
+                }
+                this.ctx.globalAlpha = 1;
+            }
+            
+            // 绘制雪地轨迹
+            drawSnowTrails() {
+                // 简单的雪地轨迹效果
+                this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                for (let i = 0; i < 5; i++) {
+                    const x = this.skier.x + this.skier.width / 2 + (Math.random() - 0.5) * 10;
+                    const y = this.skier.y + this.skier.height + i * 10;
+                    this.ctx.beginPath();
+                    this.ctx.arc(x, y, 2, 0, Math.PI * 2);
+                    this.ctx.fill();
+                }
+            }
+            
+            // 绘制游戏
+            draw() {
+                // 清空画布
+                this.ctx.fillStyle = '#E0F2FE';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // 绘制远处的山脉
+                this.drawBackground();
+                
+                // 绘制游戏元素
+                this.drawVowels();
+                this.drawSnowTrails();
+                this.drawSkier();
+                this.drawParticles();
+            }
+            
+            // 绘制背景
+            drawBackground() {
+                // 远山
+                this.ctx.fillStyle = '#94A3B8';
+                this.ctx.beginPath();
+                this.ctx.moveTo(0, this.canvas.height / 3);
+                this.ctx.lineTo(this.canvas.width / 4, this.canvas.height / 4);
+                this.ctx.lineTo(this.canvas.width / 2, this.canvas.height / 3);
+                this.ctx.lineTo(this.canvas.width * 3 / 4, this.canvas.height / 5);
+                this.ctx.lineTo(this.canvas.width, this.canvas.height / 3);
+                this.ctx.lineTo(this.canvas.width, this.canvas.height);
+                this.ctx.lineTo(0, this.canvas.height);
+                this.ctx.closePath();
+                this.ctx.fill();
+                
+                // 近山
+                this.ctx.fillStyle = '#64748B';
+                this.ctx.beginPath();
+                this.ctx.moveTo(0, this.canvas.height / 2);
+                this.ctx.lineTo(this.canvas.width / 3, this.canvas.height / 3);
+                this.ctx.lineTo(this.canvas.width * 2 / 3, this.canvas.height / 2);
+                this.ctx.lineTo(this.canvas.width, this.canvas.height / 3);
+                this.ctx.lineTo(this.canvas.width, this.canvas.height);
+                this.ctx.lineTo(0, this.canvas.height);
+                this.ctx.closePath();
+                this.ctx.fill();
+            }
+            
+            // 游戏循环
+            gameLoop(timestamp) {
+                // 记录游戏开始时间
+                if (!this.gameStartTime && this.gameState === 'playing') {
+                    this.gameStartTime = timestamp;
+                }
+                
+                // 只有在游戏进行中才更新
+                if (this.gameState === 'playing') {
+                    this.updateSkier();
+                    this.spawnVowels();
+                    this.updateVowels();
+                    this.updateParticles();
+                    this.checkCollisions();
+                }
+                
+                // 绘制游戏
+                this.draw();
+                
+                // 继续循环
+                requestAnimationFrame((timestamp) => this.gameLoop(timestamp));
+            }
+        }
+        
+        // 当页面加载完成后初始化游戏
+        window.addEventListener('load', () => {
+            // 检查浏览器是否支持语音合成
+            if ('speechSynthesis' in window) {
+                // 等待语音合成加载完成
+                window.speechSynthesis.onvoiceschanged = () => {
+                    new Unit7Game();
+                };
+            } else {
+                // 如果不支持，仍然启动游戏但没有发音功能
+                alert('您的浏览器不支持语音合成功能，单词将无法发音。');
+                new Unit7Game();
+            }
+        });
+    </script>
+</body>
+</html>
+    
